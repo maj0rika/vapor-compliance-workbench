@@ -6,4 +6,11 @@
  * (MockAgentClient, messageMachine 등)의 직접 deep import 는
  * ESLint `no-restricted-imports` 규칙으로 차단된다.
  */
-export {};
+export type { AgentClient } from './AgentClient';
+export type {
+  AgentEvent,
+  AgentRequest,
+  ChatMessage,
+  MessageStatus,
+  Role,
+} from './types';
