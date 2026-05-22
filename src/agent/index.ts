@@ -7,6 +7,7 @@
  * ESLint `no-restricted-imports` 규칙으로 차단된다.
  */
 export type { AgentClient } from './AgentClient';
+export { MockAgentClient } from './MockAgentClient';
 export type {
   AgentEvent,
   AgentRequest,
