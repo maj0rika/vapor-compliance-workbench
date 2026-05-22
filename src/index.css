@@ -1,8 +1,12 @@
-:root {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  line-height: 1.5;
-  color-scheme: light dark;
-}
+/* 스타일 우선순위: Vapor 컴포넌트 < Vapor 유틸리티 < Tailwind 유틸리티 */
+@layer tw-theme, vapor, tw-utilities;
+
+/* Vapor UI 디자인 토큰 + Tailwind 프리셋 */
+@import '@vapor-ui/core/tailwind.css';
+
+/* Tailwind CSS v4 (preflight 제외 — Vapor 가 자체 reset 을 포함) */
+@import 'tailwindcss/theme.css' layer(tw-theme);
+@import 'tailwindcss/utilities.css' layer(tw-utilities);
 
 * {
   box-sizing: border-box;
@@ -11,4 +15,10 @@
 body {
   margin: 0;
   min-height: 100vh;
+}
+
+/* Vapor UI Portal(Dialog, Popover 등)이 항상 콘텐츠 위에 표시되도록
+   앱 루트에 별도의 stacking context 를 생성한다. */
+#root {
+  isolation: isolate;
 }
