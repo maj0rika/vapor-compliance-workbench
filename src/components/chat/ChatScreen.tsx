@@ -121,6 +121,7 @@ export function ChatScreen({
             dataSources: payload.dataSources,
             attachments: payload.attachments.map((attachment) => ({
               fileName: attachment.fileName,
+              size: attachment.size,
             })),
           })
         }

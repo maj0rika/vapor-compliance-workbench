@@ -14,12 +14,22 @@ export type MessageStatus =
   | 'error'
   | 'cancelled';
 
+/** 메시지에 함께 표시되는 첨부 파일 메타데이터. */
+export type MessageAttachment = {
+  fileName: string;
+  size: number;
+};
+
 export type ChatMessage = {
   id: string;
   role: Role;
   /** 현재까지 누적된 본문 텍스트. */
   text: string;
   status: MessageStatus;
+  /** 메시지 생성 시각 (epoch ms). */
+  createdAt: number;
+  /** 함께 전송된 첨부 파일. */
+  attachments?: MessageAttachment[];
   /** 어시스턴트가 작성한 초안 문서 (PreviewPanel 에 렌더링). */
   draft?: string;
   /** status 가 'error' 일 때의 사유. */
@@ -30,7 +40,7 @@ export type ChatMessage = {
 export type AgentRequest = {
   text: string;
   dataSources?: string[];
-  attachments?: { fileName: string }[];
+  attachments?: MessageAttachment[];
 };
 
 /**

@@ -8,6 +8,7 @@ const makeMessage = (overrides: Partial<ChatMessage> = {}): ChatMessage => ({
   role: 'assistant',
   text: '안녕하세요',
   status: 'done',
+  createdAt: Date.UTC(2026, 0, 1, 9, 30),
   ...overrides,
 });
 

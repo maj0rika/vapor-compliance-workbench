@@ -14,6 +14,7 @@ export type {
   AgentEvent,
   AgentRequest,
   ChatMessage,
+  MessageAttachment,
   MessageStatus,
   Role,
 } from './types';

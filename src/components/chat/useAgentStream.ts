@@ -100,11 +100,14 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
       const controller = new AbortController();
       abortRef.current = controller;
 
+      const now = Date.now();
       const userMessage: ChatMessage = {
         id: crypto.randomUUID(),
         role: 'user',
         text: request.text,
         status: 'done',
+        createdAt: now,
+        attachments: request.attachments,
       };
       const assistantId = crypto.randomUUID();
       const assistantMessage: ChatMessage = {
@@ -112,6 +115,7 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
         role: 'assistant',
         text: '',
         status: 'streaming',
+        createdAt: now,
       };
 
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
