@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from 'react';
-import { Text } from '@vapor-ui/core';
+import { useEffect, useMemo, useState } from 'react';
+import { Button, Text } from '@vapor-ui/core';
 import { MockAgentClient, type AgentClient } from '../../agent';
 import { PromptBar, type DataSourceOption } from '../prompt';
 import { ConversationView } from './ConversationView';
+import { PreviewPanel } from './PreviewPanel';
 import { useAgentStream } from './useAgentStream';
 
 export type ChatScreenProps = {
@@ -15,12 +16,19 @@ export type ChatScreenProps = {
 /**
  * AI 에이전트 채팅 화면의 최상위 합성 컴포넌트.
  *
- * 대화 thread(ConversationView) + 입력 영역(PromptBar)을 조립하고,
- * useAgentStream 으로 스트리밍 상태를 관리한다. 스트리밍 중 ESC 로 취소.
+ * 좌측 대화 thread(ConversationView) + 우측 초안 미리보기(PreviewPanel)의
+ * split-panel 셸이며, 하단에 입력 영역(PromptBar)을 둔다. 좁은 뷰포트에서는
+ * 두 패널이 세로로 스택된다. 스트리밍 중 ESC 로 취소.
  */
 export function ChatScreen({ dataSourceOptions, client }: ChatScreenProps) {
   const agent = useMemo(() => client ?? new MockAgentClient(), [client]);
   const { messages, isStreaming, send, cancel } = useAgentStream(agent);
+
+  // 사용자가 명시적으로 닫은 초안의 id. 미리보기는 기본 열림이며,
+  // 닫은 초안과 id 가 다른 새 초안이 오면 다시 열린다 (effect 불필요).
+  const [closedDraftId, setClosedDraftId] = useState<string | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     if (!isStreaming) return;
@@ -31,20 +39,53 @@ export function ChatScreen({ dataSourceOptions, client }: ChatScreenProps) {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isStreaming, cancel]);
 
+  // 초안을 가진 가장 최근 어시스턴트 메시지.
+  const draftMessage = useMemo(
+    () => [...messages].reverse().find((m) => m.role === 'assistant' && m.draft),
+    [messages],
+  );
+  const latestDraft = draftMessage?.draft ?? '';
+  const draftId = draftMessage?.id;
+
   const isEmpty = messages.length === 0;
+  const showPreview = Boolean(draftId) && draftId !== closedDraftId;
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-3">
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-v-400 border border-v-normal bg-v-canvas-100">
-        {isEmpty ? (
-          <div className="flex flex-1 items-center justify-center p-v-400 text-center">
-            <Text typography="body2" foreground="hint-200">
-              글쓰기에 대해 무엇이든 물어보세요. 문장 다듬기, 초안 작성, 제목
-              추천을 도와드립니다.
-            </Text>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 md:flex-row">
+        {/* 좌: 대화 thread */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-v-400 border border-v-normal bg-v-canvas-100">
+          {Boolean(draftId) && !showPreview && (
+            <div className="flex justify-end border-b border-v-normal px-v-200 py-v-100">
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setClosedDraftId(undefined)}
+              >
+                초안 보기
+              </Button>
+            </div>
+          )}
+          {isEmpty ? (
+            <div className="flex flex-1 items-center justify-center p-v-400 text-center">
+              <Text typography="body2" foreground="hint-200">
+                글쓰기에 대해 무엇이든 물어보세요. 문장 다듬기, 초안 작성, 제목
+                추천을 도와드립니다.
+              </Text>
+            </div>
+          ) : (
+            <ConversationView messages={messages} />
+          )}
+        </div>
+
+        {/* 우: 초안 미리보기 */}
+        {showPreview && (
+          <div className="flex min-h-0 flex-1 flex-col md:max-w-[45%]">
+            <PreviewPanel
+              draft={latestDraft}
+              onClose={() => setClosedDraftId(draftId)}
+            />
           </div>
-        ) : (
-          <ConversationView messages={messages} />
         )}
       </div>
 
