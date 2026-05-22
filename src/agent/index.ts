@@ -7,6 +7,7 @@
  * ESLint `no-restricted-imports` 규칙으로 차단된다.
  */
 export type { AgentClient } from './AgentClient';
+export { DeepSeekAgentClient, parseDeepSeekSseFrame } from './DeepSeekAgentClient';
 export { MockAgentClient } from './MockAgentClient';
 export { messageReducer, isTerminal } from './messageMachine';
 export type { MachineEvent } from './messageMachine';

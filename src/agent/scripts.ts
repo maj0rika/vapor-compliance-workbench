@@ -1,76 +1,223 @@
 /**
- * 글쓰기 코치 도메인의 모의 응답 스크립트.
+ * Vapor DS 자동화 도메인의 모의 응답 스크립트.
  *
- * 실제 LLM 대신 입력 키워드로 미리 작성된 스크립트를 선택한다.
- * `draft` 가 있으면 PreviewPanel 에 초안 문서로 렌더링된다.
+ * 실제 DeepSeek 대신 deterministic artifact 를 방출해 E2E 를 안정화한다.
  */
+
+import type { AgentMode } from './types';
 
 export type AgentScript = {
   /** 어시스턴트 응답 본문. */
   reply: string;
-  /** PreviewPanel 에 렌더링할 초안 문서. */
+  /** PreviewPanel 에 렌더링할 생성 artifact. */
   draft?: string;
   /** 설정 시 본문 일부를 흘린 뒤 오류로 종료한다 (오류 경로 테스트용). */
   error?: string;
 };
 
-const REVISE: AgentScript = {
-  reply:
-    '문장을 다듬어 봤어요. 주요 변경은 다음과 같습니다.\n\n' +
-    '- **주어를 앞세워** 문장의 초점을 분명히 했습니다\n' +
-    '- 불필요한 수식어를 덜어 읽는 호흡을 줄였습니다\n' +
-    '- 한 문장에 담긴 정보를 두 문장으로 나눴습니다\n\n' +
-    '오른쪽 패널에서 수정본을 확인하세요.',
-  draft:
-    '## 제안 수정본\n\n' +
-    '우리 팀은 이번 분기에 신규 사용자 **온보딩 흐름**을 다시 설계했습니다. ' +
-    '그 결과 첫 주 이탈률이 눈에 띄게 줄었고, 핵심 기능 사용률은 높아졌습니다.\n\n' +
-    '> 원문은 한 문장에 정보가 많아 호흡이 길었습니다.',
+const COMPONENT_ARTIFACT = `<artifact type="component" filename="PrimaryActionButton.tsx">
+\`\`\`tsx
+import { Button } from '@vapor-ui/core';
+
+export type PrimaryActionButtonProps = {
+  children: string;
+  disabled?: boolean;
+  onClick?: () => void;
 };
 
-const DRAFT: AgentScript = {
-  reply:
-    '요청하신 글의 초안을 작성했어요. 다음 구조로 잡았습니다.\n\n' +
-    '1. **도입** — 독자의 문제의식을 먼저 건드립니다\n' +
-    '2. **본문** — 해결책을 구체적으로 제시합니다\n' +
-    '3. **마무리** — 핵심 메시지를 한 문장으로 남깁니다\n\n' +
-    '오른쪽 패널의 초안을 검토해 주세요.',
-  draft:
-    '## 초안\n\n' +
-    '좋은 글은 정보를 나열하지 않습니다. 좋은 글은 독자가 **다음 문장을 읽고 싶게** ' +
-    '만듭니다.\n\n' +
-    '그 차이는 문장력이 아니라 구조에서 옵니다.',
-};
+export function PrimaryActionButton({
+  children,
+  disabled = false,
+  onClick,
+}: PrimaryActionButtonProps) {
+  return (
+    <Button
+      type="button"
+      colorPalette="primary"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
+\`\`\`
+</artifact>
 
-const TITLE: AgentScript = {
-  reply:
-    '제목 후보를 뽑아 봤어요.\n\n' +
-    '1. **직관형** — 글의 내용을 그대로 요약\n' +
-    '2. **호기심형** — 독자가 답을 궁금하게 만드는 문장\n' +
-    '3. **검색형** — 핵심 키워드를 앞쪽에 배치\n\n' +
-    '글의 톤에 맞춰 골라 보세요.',
+<artifact type="story" filename="PrimaryActionButton.stories.tsx">
+\`\`\`tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { PrimaryActionButton } from './PrimaryActionButton';
+
+const meta = {
+  title: 'Vapor Automation/PrimaryActionButton',
+  component: PrimaryActionButton,
+  args: { children: 'Deploy component' },
+} satisfies Meta<typeof PrimaryActionButton>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+export const Disabled: Story = { args: { disabled: true } };
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="PrimaryActionButton.test.tsx">
+\`\`\`tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { PrimaryActionButton } from './PrimaryActionButton';
+
+describe('PrimaryActionButton', () => {
+  it('calls onClick when enabled', async () => {
+    const onClick = vi.fn();
+    render(<PrimaryActionButton onClick={onClick}>Deploy</PrimaryActionButton>);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Deploy' }));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+Accessible name is provided by children. Disabled state is delegated to Vapor Button.
+</notes>
+
+<notes type="token">
+Uses @vapor-ui/core Button and colorPalette instead of raw color values.
+</notes>
+`;
+
+const TOKEN_ARTIFACT = `<artifact type="component" filename="figmaToVaporTokenMap.ts">
+\`\`\`ts
+export const figmaToVaporTokenMap = {
+  'color.primary.500': 'var(--vapor-color-background-primary-200)',
+  'color.surface.default': 'var(--vapor-color-background-canvas-100)',
+  'radius.control.md': 'var(--vapor-size-borderRadius-300)',
+} as const;
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="TokenSyncPreview.stories.tsx">
+\`\`\`tsx
+export const TokenSyncPreview = () => (
+  <dl>
+    <dt>Figma variable</dt>
+    <dd>color.primary.500</dd>
+    <dt>Vapor token</dt>
+    <dd>var(--vapor-color-background-primary-200)</dd>
+  </dl>
+);
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="figmaToVaporTokenMap.test.ts">
+\`\`\`ts
+import { describe, expect, it } from 'vitest';
+import { figmaToVaporTokenMap } from './figmaToVaporTokenMap';
+
+describe('figmaToVaporTokenMap', () => {
+  it('maps primary color to a Vapor token', () => {
+    expect(figmaToVaporTokenMap['color.primary.500']).toContain('--vapor-');
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+Token sync output is textual and should be rendered as a definition list or table.
+</notes>
+
+<notes type="token">
+Maps Figma variable names to existing Vapor CSS custom properties.
+</notes>
+`;
+
+const A11Y_ARTIFACT = `<artifact type="component" filename="AccessibleAttachButton.tsx">
+\`\`\`tsx
+import { IconButton, Tooltip } from '@vapor-ui/core';
+import { AttachFileOutlineIcon } from '@vapor-ui/icons';
+
+export function AccessibleAttachButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Tooltip.Root>
+      <Tooltip.Trigger
+        render={<IconButton aria-label="참고 파일 첨부" onClick={onClick} />}
+      >
+        <AttachFileOutlineIcon size={18} />
+      </Tooltip.Trigger>
+      <Tooltip.Popup>토큰 JSON 또는 컴포넌트 파일 첨부</Tooltip.Popup>
+    </Tooltip.Root>
+  );
+}
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="AccessibleAttachButton.stories.tsx">
+\`\`\`tsx
+export const KeyboardReachable = {
+  parameters: { a11y: { disable: false } },
 };
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="AccessibleAttachButton.test.tsx">
+\`\`\`tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it, vi } from 'vitest';
+import { AccessibleAttachButton } from './AccessibleAttachButton';
+
+describe('AccessibleAttachButton', () => {
+  it('has an accessible name', () => {
+    render(<AccessibleAttachButton onClick={vi.fn()} />);
+    expect(screen.getByRole('button', { name: '참고 파일 첨부' })).toBeEnabled();
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+Icon-only control has a visible tooltip and an aria-label for screen readers.
+</notes>
+
+<notes type="token">
+No raw color, spacing, or radius values are introduced.
+</notes>
+`;
 
 const DEFAULT: AgentScript = {
   reply:
-    '글쓰기와 관련해 무엇이든 도와드릴게요. 이런 것들을 할 수 있습니다.\n\n' +
-    '- 문장 **다듬기** 와 첨삭\n' +
-    '- 글의 **초안 작성**\n' +
-    '- **제목** 후보 제안\n\n' +
-    '어떤 글을 쓰고 계신지 알려주세요.',
+    '요청을 DS 자동화 작업으로 분해했습니다.\n\n' +
+    '- Vapor primitive 를 직접 감싸는 React 컴포넌트 생성\n' +
+    '- Storybook story 와 Vitest 테스트 동시 작성\n' +
+    '- 접근성 이름, keyboard path, token 사용 여부 검증\n\n' +
+    '오른쪽 artifact workspace 에 생성물을 정리했습니다.',
+  draft: COMPONENT_ARTIFACT,
 };
 
 const ERROR: AgentScript = {
-  reply: '요청을 처리하는 중에',
-  error: '응답 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+  reply: '생성 파이프라인을 실행하는 중에',
+  error: '컴포넌트 자동화 요청 처리에 실패했습니다. 입력 파일과 mode 를 확인해 주세요.',
 };
 
-/** 입력 텍스트의 키워드로 모의 응답 스크립트를 선택한다. */
-export function selectScript(input: string): AgentScript {
+export function selectScript(input: string, mode: AgentMode = 'component'): AgentScript {
   const text = input.toLowerCase();
   if (/에러|error|실패/.test(text)) return ERROR;
-  if (/다듬|고쳐|첨삭|개선|revise/.test(text)) return REVISE;
-  if (/써줘|작성|초안|draft|write/.test(text)) return DRAFT;
-  if (/제목|title|헤드라인/.test(text)) return TITLE;
+  if (mode === 'token-sync' || /figma|token|variable/.test(text)) {
+    return {
+      reply: 'Figma Variables 를 Vapor token 매핑으로 정규화했습니다.',
+      draft: TOKEN_ARTIFACT,
+    };
+  }
+  if (mode === 'a11y-audit' || /a11y|axe|접근성/.test(text)) {
+    return {
+      reply: '접근성 기준으로 컴포넌트 contract 를 재작성했습니다.',
+      draft: A11Y_ARTIFACT,
+    };
+  }
   return DEFAULT;
 }

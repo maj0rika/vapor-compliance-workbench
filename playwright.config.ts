@@ -17,7 +17,7 @@ export default defineConfig({
     { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
   ],
   webServer: {
-    command: `npm run dev -- --port ${PORT} --strictPort`,
+    command: `VITE_AGENT_CLIENT=mock npm run dev -- --port ${PORT} --strictPort`,
     url: BASE_URL,
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

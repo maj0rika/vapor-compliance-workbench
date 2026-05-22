@@ -1,9 +1,11 @@
 import type { AgentClient } from './AgentClient';
 import type { AgentEvent, AgentRequest } from './types';
 import { selectScript } from './scripts';
+import { artifactToMarkdown, parseGeneratedArtifact } from './responseParser';
+import { checkTokenUsage } from './tokenUsage';
 
 /** 토큰 사이 지연(ms). SSE 스트리밍을 흉내 낸다. */
-const TOKEN_DELAY_MS = 22;
+const TOKEN_DELAY_MS = 6;
 
 /** 본문을 단어+공백 단위 토큰으로 쪼갠다. */
 function tokenize(text: string): string[] {
@@ -40,7 +42,7 @@ export class MockAgentClient implements AgentClient {
     request: AgentRequest,
     signal?: AbortSignal,
   ): AsyncIterable<AgentEvent> {
-    const script = selectScript(request.text);
+    const script = selectScript(request.text, request.mode);
 
     try {
       for (const token of tokenize(script.reply)) {
@@ -54,7 +56,13 @@ export class MockAgentClient implements AgentClient {
       }
 
       if (script.draft) {
-        for (const token of tokenize(script.draft)) {
+        const artifact = parseGeneratedArtifact(script.draft);
+        const tokenCheck = checkTokenUsage(artifact);
+        const preview = artifactToMarkdown(artifact).replace(
+          '- Vapor token usage: CHECK',
+          `- Vapor token usage: ${tokenCheck.status === 'pass' ? 'PASS' : 'CHECK'}`,
+        );
+        for (const token of tokenize(preview)) {
           await delay(TOKEN_DELAY_MS, signal);
           yield { type: 'draft', value: token };
         }

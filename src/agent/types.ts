@@ -6,6 +6,8 @@
 
 export type Role = 'user' | 'assistant';
 
+export type AgentMode = 'component' | 'token-sync' | 'a11y-audit' | 'story-test';
+
 /** 메시지 단위 상태. 상태머신(messageMachine)이 관리한다. */
 export type MessageStatus =
   | 'idle'
@@ -18,6 +20,9 @@ export type MessageStatus =
 export type MessageAttachment = {
   fileName: string;
   size: number;
+  kind?: 'tokens' | 'component' | 'spec' | 'text';
+  contentText?: string;
+  truncated?: boolean;
 };
 
 export type ChatMessage = {
@@ -34,11 +39,14 @@ export type ChatMessage = {
   draft?: string;
   /** status 가 'error' 일 때의 사유. */
   errorMessage?: string;
+  /** 재생성 시 같은 mode/첨부 맥락을 유지하기 위한 원본 요청. */
+  request?: AgentRequest;
 };
 
 /** 에이전트에 전달하는 요청. PromptBar 의 제출 payload 와 정렬된다. */
 export type AgentRequest = {
   text: string;
+  mode?: AgentMode;
   dataSources?: string[];
   attachments?: MessageAttachment[];
 };
