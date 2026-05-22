@@ -98,4 +98,17 @@ test.describe('채팅 대화 흐름', () => {
       '지원하지 않는 파일 형식',
     );
   });
+
+  test('첨부한 파일이 대화 메시지에 함께 표시된다', async ({ page }) => {
+    await page.goto('/');
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(makeTempFile('outline.md'));
+    await page.getByLabel('프롬프트 입력').fill('이 개요 검토해줘');
+    await page.getByRole('button', { name: '보내기' }).click();
+
+    const userBubble = page.locator('[data-role="user"]');
+    await expect(userBubble).toContainText('이 개요 검토해줘');
+    await expect(userBubble).toContainText('outline.md');
+  });
 });
