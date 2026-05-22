@@ -11,6 +11,8 @@ import { useAgentStream } from './useAgentStream';
 export type ChatScreenProps = {
   /** 입력창 데이터소스 선택 옵션 (도메인 데이터 — 앱 레이어가 주입). */
   dataSourceOptions: DataSourceOption[];
+  /** 첨부 허용 파일 형식 (확장자/MIME). 미지정 시 모든 형식 허용. */
+  acceptedFileTypes?: string[];
   /** 에이전트 클라이언트. 미지정 시 MockAgentClient 를 사용한다. */
   client?: AgentClient;
 };
@@ -22,7 +24,11 @@ export type ChatScreenProps = {
  * split-panel 셸이며, 하단에 입력 영역(PromptBar)을 둔다. 좁은 뷰포트에서는
  * 두 패널이 세로로 스택된다. 스트리밍 중 ESC 로 취소.
  */
-export function ChatScreen({ dataSourceOptions, client }: ChatScreenProps) {
+export function ChatScreen({
+  dataSourceOptions,
+  acceptedFileTypes,
+  client,
+}: ChatScreenProps) {
   const agent = useMemo(() => client ?? new MockAgentClient(), [client]);
   const { messages, isStreaming, send, regenerate, cancel } =
     useAgentStream(agent);
@@ -104,6 +110,7 @@ export function ChatScreen({ dataSourceOptions, client }: ChatScreenProps) {
         key={seed}
         defaultText={seedText}
         dataSourceOptions={dataSourceOptions}
+        accept={acceptedFileTypes}
         multipleDataSources
         compactDropzone
         disabled={isStreaming}

@@ -25,7 +25,10 @@ export function ChatDemoPage() {
           Vapor UI 기반 AI 에이전트 채팅 화면 — 컴포넌트 레이어 케이스 스터디
         </p>
       </header>
-      <ChatScreen dataSourceOptions={DATA_SOURCES} />
+      <ChatScreen
+        dataSourceOptions={DATA_SOURCES}
+        acceptedFileTypes={['.txt', '.md', '.pdf', '.docx']}
+      />
     </div>
   );
 }

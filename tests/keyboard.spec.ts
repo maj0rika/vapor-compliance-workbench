@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Prompt Input 키보드 조작', () => {
+test.describe('채팅 입력 키보드 조작', () => {
   test('Enter 로 제출하고 Shift+Enter 로 줄바꿈한다', async ({ page }) => {
     await page.goto('/');
 
@@ -12,7 +12,7 @@ test.describe('Prompt Input 키보드 조작', () => {
     await expect(textarea).toHaveValue('첫 줄\n둘째 줄');
 
     await textarea.press('Enter');
-    await expect(page.getByRole('heading', { name: '제출됨' })).toBeVisible();
+    await expect(page.locator('[data-role="user"]')).toContainText('첫 줄');
     await expect(textarea).toHaveValue('');
   });
 
@@ -20,10 +20,10 @@ test.describe('Prompt Input 키보드 조작', () => {
     await page.goto('/');
 
     await page.getByLabel('데이터소스 선택').click();
-    await expect(page.getByRole('option', { name: '웹 검색' })).toBeVisible();
+    await expect(page.getByRole('option', { name: '내 문서' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('option', { name: '웹 검색' })).toBeHidden();
+    await expect(page.getByRole('option', { name: '내 문서' })).toBeHidden();
   });
 
   test('키보드로 파일 선택 버튼을 조작해 파일 대화상자를 연다', async ({
@@ -41,7 +41,9 @@ test.describe('Prompt Input 키보드 조작', () => {
     expect(fileChooser.element()).toBeTruthy();
   });
 
-  test('Tab 으로 주요 컨트롤을 순서대로 순회한다', async ({ page }) => {
+  test('Tab 으로 데이터소스 → 파일 선택 → 입력창을 순회한다', async ({
+    page,
+  }) => {
     await page.goto('/');
 
     const dataSource = page.getByLabel('데이터소스 선택');
