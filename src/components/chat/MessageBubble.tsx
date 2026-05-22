@@ -2,6 +2,7 @@ import { Text } from '@vapor-ui/core';
 import { isTerminal, type ChatMessage } from '../../agent';
 import { AttachmentChip } from './AttachmentChip';
 import { MessageActions } from './MessageActions';
+import { MessageAvatar } from './MessageAvatar';
 import { StreamingIndicator } from './StreamingIndicator';
 
 export type MessageBubbleProps = {
@@ -10,37 +11,73 @@ export type MessageBubbleProps = {
   onRegenerate?: () => void;
 };
 
+const SENDER_NAME: Record<ChatMessage['role'], string> = {
+  user: '나',
+  assistant: '글쓰기 코치',
+};
+
+function formatTime(timestamp: number): string {
+  return new Date(timestamp).toLocaleTimeString('ko-KR', {
+    hour: 'numeric',
+    minute: '2-digit',
+  });
+}
+
 /**
- * user / assistant 메시지 버블.
+ * user / assistant 메시지 — 아바타, 발신자·시각 메타, 본문 버블, 액션.
  *
  * 스트리밍 중인 어시스턴트 메시지는 본문이 비어 있으면 타이핑 인디케이터를,
- * 텍스트가 들어오면 `aria-live="polite"` 영역으로 점진 렌더한다. 종료된
- * 어시스턴트 메시지에는 액션(복사·재생성·피드백)을 노출한다.
+ * 텍스트가 들어오면 `aria-live="polite"` 영역으로 점진 렌더한다.
  */
 export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const isStreaming = message.status === 'streaming';
   const showIndicator = isStreaming && message.text.length === 0;
   const showActions = !isUser && isTerminal(message.status);
+  const hasAttachments =
+    message.attachments != null && message.attachments.length > 0;
 
   const handleCopy = () => {
     void navigator.clipboard?.writeText(message.text);
   };
 
   return (
-    <div className={isUser ? 'flex justify-end' : 'flex justify-start'}>
-      <div className="flex max-w-[80%] flex-col">
+    <div
+      className={[
+        'flex gap-2.5',
+        isUser ? 'flex-row-reverse' : 'flex-row',
+      ].join(' ')}
+    >
+      <MessageAvatar role={message.role} />
+
+      <div
+        className={[
+          'flex min-w-0 max-w-[82%] flex-col gap-1',
+          isUser ? 'items-end' : 'items-start',
+        ].join(' ')}
+      >
+        <div className="flex items-baseline gap-1.5 px-1">
+          <Text typography="body4" foreground="normal-200">
+            {SENDER_NAME[message.role]}
+          </Text>
+          <Text typography="body4" foreground="hint-200">
+            {formatTime(message.createdAt)}
+          </Text>
+        </div>
+
         <div
           data-role={message.role}
           data-status={message.status}
           className={[
             'rounded-v-300 px-v-200 py-v-150',
-            isUser ? 'bg-v-primary-100' : 'bg-v-canvas-200',
+            isUser
+              ? 'rounded-tr-v-0 bg-v-primary-100'
+              : 'rounded-tl-v-0 bg-v-canvas-200',
           ].join(' ')}
         >
-          {message.attachments && message.attachments.length > 0 && (
+          {hasAttachments && (
             <div className="mb-1.5 flex flex-wrap gap-1.5">
-              {message.attachments.map((attachment, index) => (
+              {message.attachments!.map((attachment, index) => (
                 <AttachmentChip key={index} attachment={attachment} />
               ))}
             </div>
@@ -49,13 +86,15 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
           {showIndicator ? (
             <StreamingIndicator />
           ) : (
-            <Text
-              typography="body2"
-              className="block whitespace-pre-wrap break-words"
-              aria-live={!isUser && isStreaming ? 'polite' : undefined}
-            >
-              {message.text}
-            </Text>
+            message.text.length > 0 && (
+              <Text
+                typography="body2"
+                className="block whitespace-pre-wrap break-words"
+                aria-live={!isUser && isStreaming ? 'polite' : undefined}
+              >
+                {message.text}
+              </Text>
+            )
           )}
 
           {message.status === 'error' && message.errorMessage && (
