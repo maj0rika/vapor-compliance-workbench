@@ -19,4 +19,25 @@ export default defineConfig([
       globals: globals.browser,
     },
   },
+  /*
+   * 경계 규칙: 앱 레이어는 Vapor primitive 를 직접 사용하지 않는다.
+   * Vapor 는 오직 제품 컴포넌트 레이어(src/components/**)에서만 import 한다.
+   */
+  {
+    files: ['src/app/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@vapor-ui/core', '@vapor-ui/core/*'],
+              message:
+                '앱 레이어는 Vapor primitive 를 직접 import 할 수 없습니다. src/components/prompt 의 제품 컴포넌트를 사용하세요.',
+            },
+          ],
+        },
+      ],
+    },
+  },
 ])
