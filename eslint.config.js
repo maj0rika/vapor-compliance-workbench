@@ -33,9 +33,69 @@ export default defineConfig([
     rules: vapor.configs.flat.rules,
   },
   /*
-   * 경계 규칙: 앱 레이어는 Vapor primitive 를 직접 사용하지 않는다.
-   * Vapor 는 오직 제품 컴포넌트 레이어(src/components/**)에서만 import 한다.
+   * 경계 규칙 (2종)
+   *
+   * 1) Vapor 경계 — Vapor primitive 는 제품 컴포넌트 레이어에서만 사용한다.
+   *    src/** 전역에서 @vapor-ui/core 직접 import 를 차단하고,
+   *    허용 소비처를 아래에서 *명시적으로 열거*해 규칙을 해제한다.
+   *    레이어를 추가하면 이 열거 목록에 한 줄을 더해야 하므로,
+   *    경계 결정이 항상 diff 에 드러난다.
+   *
+   * 2) agent-internal 경계 — agent 엔진은 배럴(src/agent/index.ts)로만
+   *    노출된다. 앱·chat 레이어가 agent 내부 모듈을 deep import 하면 error.
    */
+
+  // 1) Vapor 차단 (src/** 기본값)
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['@vapor-ui/core', '@vapor-ui/core/*'],
+              message:
+                'Vapor primitive 는 제품 컴포넌트 레이어(src/components/prompt, src/components/chat)에서만 import 할 수 있습니다.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // 1) Vapor 허용 소비처 — 명시적 열거 (규칙 해제)
+  {
+    files: [
+      'src/components/prompt/**/*.{ts,tsx}',
+      'src/components/chat/**/*.{ts,tsx}',
+      'src/main.tsx',
+    ],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+
+  // 2) agent-internal 경계 — chat 레이어: Vapor 허용 + agent deep import 차단
+  {
+    files: ['src/components/chat/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/agent/*'],
+              message:
+                'agent 엔진은 배럴(src/agent)로만 import 하세요. 내부 모듈 직접 import 는 금지됩니다.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // 2) agent-internal 경계 — 앱 레이어: Vapor + agent deep import 모두 차단
   {
     files: ['src/app/**/*.{ts,tsx}'],
     rules: {
@@ -46,7 +106,12 @@ export default defineConfig([
             {
               group: ['@vapor-ui/core', '@vapor-ui/core/*'],
               message:
-                '앱 레이어는 Vapor primitive 를 직접 import 할 수 없습니다. src/components/prompt 의 제품 컴포넌트를 사용하세요.',
+                '앱 레이어는 Vapor primitive 를 직접 import 할 수 없습니다. src/components 의 제품 컴포넌트를 사용하세요.',
+            },
+            {
+              group: ['**/agent/*'],
+              message:
+                'agent 엔진은 배럴(src/agent)로만 import 하세요. 내부 모듈 직접 import 는 금지됩니다.',
             },
           ],
         },
