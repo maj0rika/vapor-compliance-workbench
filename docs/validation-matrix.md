@@ -17,7 +17,7 @@ levels are defined in [Reality Check](./reality-check.md).
 | Generated Vitest runner | implemented | script-verified | temp workspace Vitest |
 | Generated Axe runner | implemented | script-verified | runtime `jest-axe` test |
 | Live validation endpoint | implemented | user-verifiable | Run validation calls `/api/deepseek/validate` from the workspace |
-| Generated component Canvas | implemented | ui-visible | sandbox iframe preview from parsed artifact/story metadata |
+| Generated component Canvas | implemented | user-verifiable | sandbox iframe preview from `/api/deepseek/preview` Vite-transformed TSX entry |
 | Variant/theme controls | implemented | user-verifiable | Default/Disabled and Light/Dark controls covered by E2E |
 | Failure states | implemented | user-verifiable | broken raw-color artifact shows FAIL runner details |
 | Repair loop | implemented | user-verifiable | failed gates are sent back through Fix with Agent |

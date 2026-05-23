@@ -20,6 +20,7 @@ type CanvasVariant = {
 type CanvasModel = {
   componentName: string;
   variants: CanvasVariant[];
+  canRunReactPreview: boolean;
 };
 
 type CanvasTheme = 'light' | 'dark';
@@ -252,6 +253,7 @@ export function PreviewPanel({
           <ArtifactCanvas
             section={active}
             model={canvas}
+            artifactSource={artifactSource}
             activeVariantName={activeVariantName}
             onVariantChange={setActiveVariantName}
             theme={canvasTheme}
@@ -291,6 +293,7 @@ export function PreviewPanel({
 function ArtifactCanvas({
   section,
   model,
+  artifactSource,
   activeVariantName,
   onVariantChange,
   theme,
@@ -298,11 +301,17 @@ function ArtifactCanvas({
 }: {
   section: ArtifactSection;
   model: CanvasModel;
+  artifactSource?: string;
   activeVariantName: string;
   onVariantChange: (next: string) => void;
   theme: CanvasTheme;
   onThemeChange: (next: CanvasTheme) => void;
 }) {
+  const previewSrc =
+    artifactSource && model.canRunReactPreview
+      ? `/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}`
+      : undefined;
+
   return (
     <div className="flex h-full min-h-[360px] flex-col gap-v-200">
       <div className="flex items-center justify-between">
@@ -345,8 +354,9 @@ function ArtifactCanvas({
       </div>
       <iframe
         title="Generated artifact canvas"
-        sandbox=""
-        srcDoc={section.content}
+        sandbox={previewSrc ? 'allow-scripts allow-same-origin' : ''}
+        src={previewSrc}
+        srcDoc={previewSrc ? undefined : section.content}
         className="min-h-[280px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
       />
     </div>
@@ -387,6 +397,7 @@ function buildCanvasModel(sections: ArtifactSection[]): CanvasModel | undefined 
 
   return {
     componentName,
+    canRunReactPreview: /export function\s+\w+/.test(component.content),
     variants: [
       { name: 'Default', label },
       ...(story?.content.includes('Disabled') ? [{ name: 'Disabled', label, disabled: true }] : []),

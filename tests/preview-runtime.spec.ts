@@ -4,6 +4,11 @@ test.describe('artifact canvas runtime', () => {
   test('renders the generated component inside a sandboxed canvas frame', async ({
     page,
   }) => {
+    const consoleErrors: string[] = [];
+    page.on('console', (message) => {
+      if (message.type() === 'error') consoleErrors.push(message.text());
+    });
+
     await page.goto('/');
     await page
       .getByLabel('자동화 프롬프트 입력')
@@ -19,9 +24,14 @@ test.describe('artifact canvas runtime', () => {
     );
 
     const canvas = page.frameLocator('iframe[title="Generated artifact canvas"]');
+    await expect(page.locator('iframe[title="Generated artifact canvas"]')).toHaveAttribute(
+      'src',
+      /\/api\/deepseek\/preview/,
+    );
     await expect(
       canvas.getByRole('button', { name: 'Deploy component' }),
     ).toBeVisible();
+    expect(consoleErrors).toEqual([]);
   });
 
   test('switches canvas variants and theme', async ({ page }) => {
