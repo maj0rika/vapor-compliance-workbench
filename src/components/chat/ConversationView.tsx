@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ChatMessage } from '../../agent';
 import { MessageBubble } from './MessageBubble';
 
@@ -15,31 +15,64 @@ export function ConversationView({
   messages,
   onRegenerate,
 }: ConversationViewProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  const stickToBottomRef = useRef(true);
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
 
   useEffect(() => {
+    if (!stickToBottomRef.current) return;
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages]);
 
+  const handleScroll = () => {
+    const element = scrollRef.current;
+    if (!element) return;
+    const distanceFromBottom =
+      element.scrollHeight - element.scrollTop - element.clientHeight;
+    const isNearBottom = distanceFromBottom < 64;
+    stickToBottomRef.current = isNearBottom;
+    setShowJumpToLatest(!isNearBottom);
+  };
+
+  const scrollToLatest = () => {
+    stickToBottomRef.current = true;
+    setShowJumpToLatest(false);
+    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  };
+
   return (
-    <div
-      role="log"
-      aria-label="대화 내용"
-      aria-live="polite"
-      className="flex flex-1 flex-col gap-3 overflow-y-auto p-v-200"
-    >
-      {messages.map((message) => (
-        <MessageBubble
-          key={message.id}
-          message={message}
-          onRegenerate={
-            message.role === 'assistant'
-              ? () => onRegenerate(message.id)
-              : undefined
-          }
-        />
-      ))}
-      <div ref={endRef} />
+    <div className="relative min-h-0 flex-1">
+      <div
+        ref={scrollRef}
+        role="log"
+        aria-label="대화 내용"
+        aria-live="polite"
+        onScroll={handleScroll}
+        className="flex h-full min-h-0 flex-col gap-3 overflow-y-auto overflow-x-hidden p-v-200"
+      >
+        {messages.map((message) => (
+          <MessageBubble
+            key={message.id}
+            message={message}
+            onRegenerate={
+              message.role === 'assistant'
+                ? () => onRegenerate(message.id)
+                : undefined
+            }
+          />
+        ))}
+        <div ref={endRef} />
+      </div>
+      {showJumpToLatest && (
+        <button
+          type="button"
+          className="absolute bottom-v-200 right-v-200 rounded-v-300 border border-v-normal bg-v-canvas-100 px-v-200 py-v-100 text-sm shadow-sm"
+          onClick={scrollToLatest}
+        >
+          최신으로 이동
+        </button>
+      )}
     </div>
   );
 }

@@ -158,6 +158,65 @@ Uses a native button.
     expect(events.at(-1)).toEqual({ type: 'done' });
   });
 
+  it('artifact 와 notes 원문은 conversation token 으로 노출하지 않는다', async () => {
+    const artifact = `<artifact type="component" filename="PrimaryButton.tsx">
+\`\`\`tsx
+export function PrimaryButton() {
+  return <button>Save</button>;
+}
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="PrimaryButton.stories.tsx">
+\`\`\`tsx
+export const Default = {};
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="PrimaryButton.test.tsx">
+\`\`\`tsx
+expect(true).toBe(true);
+\`\`\`
+</artifact>
+
+<notes type="token">
+raw artifact notes
+</notes>`;
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          streamFrom([
+            `data: ${JSON.stringify({ choices: [{ delta: { content: `요약입니다.\n\n${artifact}` } }] })}\n\n`,
+            'data: [DONE]\n\n',
+          ]),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            status: 'pass',
+            durationMs: 1,
+            details: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new DeepSeekAgentClient('/chat', '/validate');
+
+    const events = await collect(client.sendMessage({ text: '버튼 생성' }));
+    const conversationText = events
+      .filter((event) => event.type === 'token')
+      .map((event) => event.value)
+      .join('');
+
+    expect(conversationText).toBe('요약입니다.\n\n');
+    expect(conversationText).not.toContain('<artifact');
+    expect(conversationText).not.toContain('export function');
+    expect(conversationText).not.toContain('<notes');
+    expect(events.some((event) => event.type === 'draft')).toBe(true);
+  });
+
   it('abort 시 done/error 없이 종료한다', async () => {
     const controller = new AbortController();
     vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {

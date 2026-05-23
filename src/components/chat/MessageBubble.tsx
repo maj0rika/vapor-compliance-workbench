@@ -53,7 +53,7 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
 
       <div
         className={[
-          'flex min-w-0 max-w-[82%] flex-col gap-1',
+          'flex min-w-0 max-w-[min(82%,100%)] flex-col gap-1',
           isUser ? 'items-end' : 'items-start',
         ].join(' ')}
       >
@@ -70,7 +70,7 @@ export function MessageBubble({ message, onRegenerate }: MessageBubbleProps) {
           data-role={message.role}
           data-status={message.status}
           className={[
-            'rounded-v-300 px-v-200 py-v-150',
+            'max-w-full overflow-hidden rounded-v-300 px-v-200 py-v-150',
             isUser
               ? 'rounded-tr-v-0 bg-v-primary-100'
               : 'rounded-tl-v-0 bg-v-canvas-200',

@@ -28,8 +28,10 @@ body {
 
 /* 마크다운 렌더링 — 색상은 Vapor 테마 토큰을 상속해 다크 모드에 적응한다. */
 .chat-md {
+  max-width: 100%;
   font-size: 0.95rem;
   line-height: 1.65;
+  overflow-wrap: anywhere;
 }
 .chat-md > :first-child {
   margin-top: 0;
@@ -39,6 +41,7 @@ body {
 }
 .chat-md p {
   margin: 0.5em 0;
+  max-width: 100%;
 }
 .chat-md h1,
 .chat-md h2,
@@ -46,12 +49,15 @@ body {
   margin: 0.9em 0 0.4em;
   font-weight: 600;
   line-height: 1.3;
+  overflow-wrap: anywhere;
 }
 .chat-md h1 {
   font-size: 1.2rem;
 }
 .chat-md h2 {
   font-size: 1.08rem;
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid var(--vapor-color-border-normal);
 }
 .chat-md h3 {
   font-size: 1rem;
@@ -83,17 +89,25 @@ body {
   background: var(--vapor-color-background-hint-100);
   padding: 0.1em 0.34em;
   border-radius: 4px;
+  word-break: break-word;
 }
 .chat-md pre {
   margin: 0.6em 0;
   padding: 0.7em 0.85em;
+  max-width: 100%;
   overflow-x: auto;
+  overscroll-behavior-x: contain;
   background: var(--vapor-color-background-hint-100);
+  border: 1px solid var(--vapor-color-border-normal);
   border-radius: 8px;
 }
 .chat-md pre code {
+  display: block;
+  min-width: max-content;
   background: none;
   padding: 0;
+  white-space: pre;
+  word-break: normal;
 }
 .chat-md blockquote {
   margin: 0.6em 0;
@@ -101,4 +115,3 @@ body {
   border-left: 3px solid var(--vapor-color-border-normal);
   color: var(--vapor-color-foreground-hint-200);
 }
-

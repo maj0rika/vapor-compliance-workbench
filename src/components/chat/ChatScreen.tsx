@@ -156,7 +156,7 @@ export function ChatScreen({
                 }
               }}
             >
-              <span className="my-v-300 w-px rounded-full bg-v-normal" />
+              <span className="h-full w-px bg-v-normal" />
             </button>
             <div
               className="flex min-h-0 min-w-0 flex-col md:flex-none"

@@ -119,11 +119,19 @@ export class DeepSeekAgentClient implements AgentClient {
       }
 
       let responseText = '';
+      let emittedConversationText = '';
       let emittedDone = false;
       for await (const event of parseDeepSeekStream(response.body, signal)) {
         if (event.type === 'token') {
           responseText += event.value;
-          yield event;
+          const nextConversationText = visibleConversationText(responseText);
+          if (nextConversationText.length > emittedConversationText.length) {
+            yield {
+              type: 'token',
+              value: nextConversationText.slice(emittedConversationText.length),
+            };
+            emittedConversationText = nextConversationText;
+          }
         } else if (event.type === 'done') {
           emittedDone = true;
           yield* this.buildDraftEvents(responseText, signal);
@@ -166,6 +174,15 @@ export class DeepSeekAgentClient implements AgentClient {
   }
 }
 
+function visibleConversationText(responseText: string): string {
+  const withoutCompleteBlocks = responseText
+    .replace(/<artifact\b[\s\S]*?<\/artifact>/gi, '')
+    .replace(/<notes\b[\s\S]*?<\/notes>/gi, '');
+  const openBlock = withoutCompleteBlocks.search(/<(artifact|notes)\b/i);
+  const visible = openBlock >= 0 ? withoutCompleteBlocks.slice(0, openBlock) : withoutCompleteBlocks;
+  return visible.replace(/\n{3,}/g, '\n\n').trimStart();
+}
+
 function buildPreviewArtifact(responseText: string): string {
   const artifact = parseGeneratedArtifact(responseText);
   if (!artifact.component && !artifact.story && !artifact.test) return '';
@@ -204,8 +221,10 @@ async function applyRemoteValidation(
       return replaceValidationSection(preview, [
         '- Typecheck: CHECK',
         '- Unit: CHECK',
+        '- Runtime Render: CHECK',
         '- Axe: CHECK',
         '- Vapor token usage: CHECK',
+        '- Cleanup: CHECK',
         '',
         `### Validation runner`,
         `Generated validation failed (${response.status}).`,
@@ -219,8 +238,10 @@ async function applyRemoteValidation(
     return replaceValidationSection(preview, [
       '- Typecheck: CHECK',
       '- Unit: CHECK',
+      '- Runtime Render: CHECK',
       '- Axe: CHECK',
       '- Vapor token usage: CHECK',
+      '- Cleanup: CHECK',
       '',
       '### Validation runner',
       error instanceof Error ? error.message : 'Generated validation failed.',
@@ -230,7 +251,7 @@ async function applyRemoteValidation(
 
 function validationResultLines(result: RemoteValidationResult): string[] {
   const detailsByLabel = new Map(result.details.map((detail) => [detail.label, detail]));
-  const labels = ['Typecheck', 'Unit', 'Axe', 'Vapor token usage'];
+  const labels = ['Typecheck', 'Unit', 'Runtime Render', 'Axe', 'Vapor token usage', 'Cleanup'];
   const lines = labels.map((label) => {
     const detail = detailsByLabel.get(label);
     const status = detail?.status === 'pass' ? 'PASS' : detail?.status === 'fail' ? 'FAIL' : 'CHECK';
