@@ -12,7 +12,7 @@ const MAX_REFERENCE_FILE_SIZE = 300 * 1024;
 const MAX_REFERENCE_FILES = 5;
 
 /**
- * Vapor DS 자동화 에이전트 화면의 데모 페이지.
+ * Vapor DS 자동화 워크벤치 화면의 데모 페이지.
  *
  * 앱 레이어이므로 Vapor primitive 와 agent 내부 모듈을 직접 import 하지 않고,
  * 제품 컴포넌트(ChatScreen)만 사용한다.
@@ -21,12 +21,12 @@ export function ChatDemoPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
       <header className="flex flex-col gap-1">
-        <h1 className="m-0 text-xl font-semibold">Vapor DS Automation Agent</h1>
+        <h1 className="m-0 text-xl font-semibold">Vapor DS Automation Workbench</h1>
         <p
           className="m-0 text-sm"
           style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
         >
-          자연어 요청에서 Vapor 컴포넌트, Storybook, 테스트, 접근성 검증까지 생성합니다.
+          Generate, render, validate, repair, and approve Vapor Design System artifacts.
         </p>
       </header>
       <ChatScreen

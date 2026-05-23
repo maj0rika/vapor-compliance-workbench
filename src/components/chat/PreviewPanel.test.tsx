@@ -75,7 +75,9 @@ describe('PreviewPanel', () => {
 
   it('생성물이 비어 있으면 안내 문구를 보여준다', () => {
     render(<PreviewPanel draft="" onClose={vi.fn()} />);
-    expect(screen.getByText('아직 생성된 artifact가 없습니다.')).toBeInTheDocument();
+    expect(screen.getByText('Workbench readiness')).toBeInTheDocument();
+    expect(screen.getByText('Canvas waiting')).toBeInTheDocument();
+    expect(screen.getByText('Validation gates ready')).toBeInTheDocument();
     expect(screen.getByText('Axe + token check')).toBeInTheDocument();
   });
 

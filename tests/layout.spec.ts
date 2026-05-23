@@ -26,6 +26,10 @@ test.describe('workbench layout', () => {
         () => document.documentElement.scrollWidth - window.innerWidth,
       );
       expect(overflow).toBeLessThanOrEqual(1);
+      const bodyOverflow = await page.evaluate(
+        () => document.body.scrollWidth - window.innerWidth,
+      );
+      expect(bodyOverflow).toBeLessThanOrEqual(1);
 
       if (size.width < 768) {
         const workspaceBox = await page.getByLabel('생성물 워크스페이스').boundingBox();

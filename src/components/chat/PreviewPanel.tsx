@@ -277,24 +277,53 @@ export function PreviewPanel({
             <Markdown>{active.content}</Markdown>
           </div>
         ) : (
-          <div className="flex h-full flex-col justify-between gap-v-400">
+          <div className="flex h-full flex-col gap-v-300">
             <div className="flex flex-col gap-v-100">
-              <Text typography="subtitle2">아직 생성된 artifact가 없습니다.</Text>
+              <Text typography="subtitle2">Workbench readiness</Text>
               <Text typography="body3" foreground="hint-200">
-                Component, Story, Test, Validation 결과가 이곳에 정리됩니다.
+                요청을 실행하면 Canvas preview, generated files, validation gates, repair
+                loop가 이곳에서 한 번에 연결됩니다.
               </Text>
             </div>
-            <div className="grid gap-v-100 text-sm">
-              {['React + TypeScript', 'Storybook story', 'Vitest test', 'Axe + token check'].map(
-                (item) => (
-                  <div
-                    key={item}
-                    className="rounded-v-200 border border-v-normal px-v-200 py-v-150"
-                  >
-                    {item}
-                  </div>
-                ),
-              )}
+            <div className="grid gap-v-100 sm:grid-cols-2">
+              {[
+                ['Canvas waiting', 'No iframe is mounted before artifactSource exists.'],
+                ['Artifact parser waiting', 'Component, Story, Test sections will be extracted.'],
+                ['Validation gates ready', 'Typecheck, Unit, Runtime, Axe, Token, Cleanup.'],
+                ['Repair loop available after failure', 'Failed gate output can be sent back to the agent.'],
+              ].map(([title, description]) => (
+                <div
+                  key={title}
+                  className="flex min-h-[96px] flex-col gap-1 rounded-v-200 border border-v-normal bg-v-canvas-200 px-v-200 py-v-150"
+                >
+                  <Text typography="subtitle2">{title}</Text>
+                  <Text typography="body4" foreground="hint-200">
+                    {description}
+                  </Text>
+                </div>
+              ))}
+            </div>
+            <div className="grid gap-v-100">
+              <Text typography="subtitle2">Expected outputs</Text>
+              <div className="grid gap-v-100 text-sm sm:grid-cols-2">
+                {['React + TypeScript', 'Storybook story', 'Vitest test', 'Axe + token check'].map(
+                  (item) => (
+                    <div
+                      key={item}
+                      className="rounded-v-200 border border-v-normal px-v-200 py-v-150"
+                    >
+                      {item}
+                    </div>
+                  ),
+                )}
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {['Run validation', 'Fix with Agent', 'Approve artifact'].map((label) => (
+                <Button key={label} size="sm" variant="outline" disabled>
+                  {label}
+                </Button>
+              ))}
             </div>
           </div>
         )}

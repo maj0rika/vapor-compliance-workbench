@@ -100,6 +100,14 @@ export function ChatScreen({
 
   const isEmpty = messages.length === 0;
   const showPreview = draftId ? draftId !== closedDraftId : true;
+  const pipelineSteps = [
+    { label: 'Prompt', status: messages.length > 0 ? 'pass' : 'waiting' },
+    { label: 'Artifact', status: latestDraft ? 'pass' : 'waiting' },
+    { label: 'Canvas', status: latestArtifactSource ? 'pass' : 'waiting' },
+    { label: 'Validation', status: latestDraft.includes('Typecheck:') ? 'pass' : 'waiting' },
+    { label: 'Repair', status: 'waiting' },
+    { label: 'Approve', status: 'waiting' },
+  ] as const;
 
   const handlePickSuggestion = (suggestion: string) => {
     setSeedText(suggestion);
@@ -110,7 +118,12 @@ export function ChatScreen({
     <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-v-400 border border-v-normal bg-v-canvas-100 shadow-sm">
       {/* 헤더 바 */}
       <div className="flex items-center justify-between border-b border-v-normal px-v-300 py-v-150">
-        <Text typography="subtitle2">Agent run</Text>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <Text typography="subtitle2">Run pipeline</Text>
+          <Text typography="body4" foreground="hint-200">
+            Generate → Canvas → Validate → Repair → Approve
+          </Text>
+        </div>
         <div className="flex items-center gap-1">
           {Boolean(draftId) && !showPreview && (
             <Button
@@ -124,6 +137,8 @@ export function ChatScreen({
           <ThemeToggle />
         </div>
       </div>
+
+      <RunPipelineBar steps={pipelineSteps} />
 
       {/* 본문: 대화 thread | artifact workspace */}
       <div ref={splitRef} className="flex min-h-0 flex-1 flex-col md:flex-row">
@@ -215,6 +230,44 @@ export function ChatScreen({
           }
         />
       </div>
+    </div>
+  );
+}
+
+function RunPipelineBar({
+  steps,
+}: {
+  steps: ReadonlyArray<{
+    label: string;
+    status: 'waiting' | 'active' | 'pass';
+  }>;
+}) {
+  return (
+    <div
+      aria-label="Prompt to Artifact to Canvas to Validation to Repair to Approve"
+      className="flex flex-wrap items-center gap-1 border-b border-v-normal px-v-200 py-v-150"
+    >
+      {steps.map((step, index) => (
+        <div key={step.label} className="flex items-center gap-1">
+          <span
+            className={[
+              'rounded-v-200 border px-v-150 py-v-075 text-xs font-medium',
+              step.status === 'pass'
+                ? 'border-v-success bg-v-success-100 text-v-success'
+                : step.status === 'active'
+                  ? 'border-v-primary bg-v-primary-100 text-v-primary'
+                  : 'border-v-normal bg-v-canvas-200 text-v-hint',
+            ].join(' ')}
+          >
+            {step.label}
+          </span>
+          {index < steps.length - 1 && (
+            <span aria-hidden="true" className="text-v-hint">
+              →
+            </span>
+          )}
+        </div>
+      ))}
     </div>
   );
 }
