@@ -61,6 +61,11 @@ style 사용을 탐지해 pass/warn/fail 로 판정합니다. Typecheck, Unit, A
 상태 모델과 mock 안정성을 먼저 갖춘 뒤 실제 temp workspace runner 로 확장 가능한
 구조입니다.
 
+최종 포트폴리오 기준은 더 엄격합니다. 생성물이 실제 temp workspace 에 파일로
+써지고, TypeScript, Vitest, Axe, Vapor token gate 를 통과한 뒤에만 성공으로
+인정합니다. 이 기준과 현재 미구현 항목은 [Quality Gates](docs/quality-gates.md)와
+[Validation Matrix](docs/validation-matrix.md)에 명시합니다.
+
 ## Tech Stack
 
 React · TypeScript · Vite · Vapor UI · Tailwind CSS v4 · react-markdown ·
@@ -75,7 +80,12 @@ npm run build      # 프로덕션 빌드
 npm run lint       # ESLint (접근성 + 경계 규칙)
 npm run test       # Vitest 단위 테스트
 npm run test:e2e   # Playwright E2E 테스트
+npm run verify     # 기본 static/app quality gate
 ```
+
+`npm run verify:generated` 는 실제 generated artifact validation runner 자리입니다.
+아직 runner 가 구현되지 않았으므로 의도적으로 실패합니다. mock validation 을 real
+validation 처럼 표시하지 않기 위한 안전장치입니다.
 
 실제 DeepSeek 연결:
 
@@ -90,13 +100,16 @@ npm run dev -- --host 127.0.0.1
 - [Component API](docs/component-api.md) — 공개 컴포넌트 props 명세
 - [Vapor Mapping](docs/vapor-mapping.md) — Vapor primitive 매핑과 래핑 이유
 - [Accessibility Checklist](docs/accessibility-checklist.md) — 접근성 점검 항목
+- [Quality Gates](docs/quality-gates.md) — 최종 통과 기준과 명령
+- [Validation Matrix](docs/validation-matrix.md) — 현재 구현/미구현 검증 매트릭스
 - [Git History Notes](docs/git-history.md) — 작업 단위별 커밋 의도
 
 ## Project Structure
 
 ```txt
 server/
-└─ deepseek/             서버 전용 DeepSeek proxy
+├─ deepseek/             서버 전용 DeepSeek proxy
+└─ validation/           generated artifact validation runner
 src/
 ├─ agent/                AgentClient, prompt builder, parser, token checker
 ├─ app/                  데모 앱 (Vapor·agent 내부 직접 import 금지)

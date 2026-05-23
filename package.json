@@ -14,6 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "verify": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e && git diff --check",
+    "verify:generated": "node server/validation/run-generated-validation.ts",
+    "verify:ci": "npm run verify && npm run verify:generated",
     "preview": "vite preview"
   },
   "dependencies": {
