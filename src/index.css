@@ -26,6 +26,16 @@ body {
   isolation: isolate;
 }
 
+.artifact-workspace-pane {
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .artifact-workspace-pane {
+    width: min(100%, var(--artifact-workspace-width, 44%));
+  }
+}
+
 /* 마크다운 렌더링 — 색상은 Vapor 테마 토큰을 상속해 다크 모드에 적응한다. */
 .chat-md {
   max-width: 100%;

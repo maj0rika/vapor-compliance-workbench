@@ -32,7 +32,7 @@ expect(true).toBe(true);
 
 describe('PreviewPanel', () => {
   it('생성물 워크스페이스와 Canvas 기본 탭을 렌더링한다', () => {
-    render(<PreviewPanel draft={ARTIFACT} onClose={vi.fn()} />);
+    render(<PreviewPanel draft={ARTIFACT} artifactSource="<artifact />" onClose={vi.fn()} />);
 
     expect(screen.getByLabelText('생성물 워크스페이스')).toHaveTextContent(
       'Artifact workspace',
@@ -42,6 +42,14 @@ describe('PreviewPanel', () => {
       'true',
     );
     expect(screen.getByTitle('Generated artifact canvas')).toBeInTheDocument();
+  });
+
+  it('artifactSource 가 없으면 Canvas 를 실제 preview 로 위장하지 않는다', () => {
+    render(<PreviewPanel draft={ARTIFACT} onClose={vi.fn()} />);
+
+    expect(screen.queryByTitle('Generated artifact canvas')).not.toBeInTheDocument();
+    expect(screen.getByText('Canvas unavailable')).toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('실제 React preview runtime');
   });
 
   it('Component 탭에서 생성 코드를 확인할 수 있다', () => {

@@ -217,6 +217,45 @@ raw artifact notes
     expect(events.some((event) => event.type === 'draft')).toBe(true);
   });
 
+  it('tag 없이 흘러온 fenced code 는 conversation token 으로 노출하지 않는다', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        streamFrom([
+          `data: ${JSON.stringify({
+            choices: [
+              {
+                delta: {
+                  content: `요약입니다.
+
+\`\`\`tsx
+export function LeakedCode() {
+  return <button />;
+}
+\`\`\`
+
+후속 설명`,
+                },
+              },
+            ],
+          })}\n\n`,
+          'data: [DONE]\n\n',
+        ]),
+        { status: 200 },
+      ),
+    );
+    const client = new DeepSeekAgentClient('/chat', '/validate');
+
+    const events = await collect(client.sendMessage({ text: '버튼 생성' }));
+    const conversationText = events
+      .filter((event) => event.type === 'token')
+      .map((event) => event.value)
+      .join('');
+
+    expect(conversationText).toBe('요약입니다.\n\n후속 설명');
+    expect(conversationText).not.toContain('```');
+    expect(conversationText).not.toContain('export function');
+  });
+
   it('abort 시 done/error 없이 종료한다', async () => {
     const controller = new AbortController();
     vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {

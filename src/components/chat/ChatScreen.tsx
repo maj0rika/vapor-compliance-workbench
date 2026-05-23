@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Button, Text } from '@vapor-ui/core';
 import {
   DeepSeekAgentClient,
@@ -159,8 +159,8 @@ export function ChatScreen({
               <span className="h-full w-px bg-v-normal" />
             </button>
             <div
-              className="flex min-h-0 min-w-0 flex-col md:flex-none"
-              style={{ width: `min(100%, ${previewWidth}%)` }}
+              className="artifact-workspace-pane flex min-h-0 min-w-0 flex-col md:flex-none"
+              style={{ '--artifact-workspace-width': `${previewWidth}%` } as CSSProperties}
             >
               <PreviewPanel
                 key={draftId}

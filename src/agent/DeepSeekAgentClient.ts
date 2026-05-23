@@ -177,8 +177,9 @@ export class DeepSeekAgentClient implements AgentClient {
 function visibleConversationText(responseText: string): string {
   const withoutCompleteBlocks = responseText
     .replace(/<artifact\b[\s\S]*?<\/artifact>/gi, '')
-    .replace(/<notes\b[\s\S]*?<\/notes>/gi, '');
-  const openBlock = withoutCompleteBlocks.search(/<(artifact|notes)\b/i);
+    .replace(/<notes\b[\s\S]*?<\/notes>/gi, '')
+    .replace(/```[\s\S]*?```/g, '');
+  const openBlock = withoutCompleteBlocks.search(/<(artifact|notes)\b|```/i);
   const visible = openBlock >= 0 ? withoutCompleteBlocks.slice(0, openBlock) : withoutCompleteBlocks;
   return visible.replace(/\n{3,}/g, '\n\n').trimStart();
 }

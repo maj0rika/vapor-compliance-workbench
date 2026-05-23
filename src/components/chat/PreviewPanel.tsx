@@ -265,7 +265,6 @@ export function PreviewPanel({
       <div className="min-h-0 flex-1 overflow-y-auto p-v-300">
         {active?.id === 'canvas' && canvas ? (
           <ArtifactCanvas
-            section={active}
             model={canvas}
             artifactSource={artifactSource}
             activeVariantName={activeVariantName}
@@ -305,7 +304,6 @@ export function PreviewPanel({
 }
 
 function ArtifactCanvas({
-  section,
   model,
   artifactSource,
   activeVariantName,
@@ -313,7 +311,6 @@ function ArtifactCanvas({
   theme,
   onThemeChange,
 }: {
-  section: ArtifactSection;
   model: CanvasModel;
   artifactSource?: string;
   activeVariantName: string;
@@ -325,6 +322,28 @@ function ArtifactCanvas({
     artifactSource && model.canRunReactPreview
       ? `/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}`
       : undefined;
+
+  if (!previewSrc) {
+    return (
+      <div className="flex h-full min-h-[360px] flex-col gap-v-200">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <Text typography="subtitle2">Canvas unavailable</Text>
+          <Text typography="body4" foreground="hint-200">
+            runtime preview requires a parsed component artifact and source payload
+          </Text>
+        </div>
+        <div
+          role="status"
+          className="rounded-v-300 border border-dashed border-v-normal bg-v-canvas-200 p-v-300"
+        >
+          <Text typography="body3">
+            이 artifact는 실제 React preview runtime으로 mount되지 않았습니다. Canvas를
+            성공 상태로 표시하지 않고 Component/Story/Test 탭에서 원본만 검토합니다.
+          </Text>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-[360px] flex-col gap-v-200">
@@ -368,9 +387,8 @@ function ArtifactCanvas({
       </div>
       <iframe
         title="Generated artifact canvas"
-        sandbox={previewSrc ? 'allow-scripts allow-same-origin' : ''}
+        sandbox="allow-scripts allow-same-origin"
         src={previewSrc}
-        srcDoc={previewSrc ? undefined : section.content}
         className="min-h-[280px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
       />
     </div>
