@@ -11,6 +11,10 @@ function makeTempFile(name: string, content = 'sample'): string {
 }
 
 test.describe('Vapor DS automation flow', () => {
+  test.beforeEach(async ({ context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  });
+
   test('empty state template fills the automation prompt', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
@@ -118,5 +122,74 @@ test.describe('Vapor DS automation flow', () => {
     const userBubble = page.locator('[data-role="user"]');
     await expect(userBubble).toContainText('토큰 매핑해줘');
     await expect(userBubble).toContainText('tokens.json');
+  });
+
+  test('token sync mode renders token mapping artifact from JSON attachment', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await page.getByLabel('자동화 모드 선택').click();
+    await page.getByRole('option', { name: 'Token Sync' }).click();
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(makeTempFile('figma-variables.json', '{"Primary/500":"#2563eb"}'));
+    await page.getByLabel('자동화 프롬프트 입력').fill('Figma Variables를 Vapor 토큰으로 매핑해줘');
+    await page.getByRole('button', { name: '자동화 실행' }).click();
+
+    const workspace = page.getByLabel('생성물 워크스페이스');
+    await expect(workspace).toBeVisible({ timeout: 6000 });
+    await expect(workspace).toContainText('figmaToVaporTokenMap');
+    await expect(workspace).toContainText('Vapor token usage: PASS');
+  });
+
+  test('a11y audit mode reviews an attached TSX component', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel('자동화 모드 선택').click();
+    await page.getByRole('option', { name: 'A11y Audit' }).click();
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(makeTempFile('Button.tsx', 'export function Button(){return <button>Save</button>}'));
+    await page.getByLabel('자동화 프롬프트 입력').fill('키보드 접근성과 aria 상태를 검토해줘');
+    await page.getByRole('button', { name: '자동화 실행' }).click();
+
+    const workspace = page.getByLabel('생성물 워크스페이스');
+    await expect(workspace).toBeVisible({ timeout: 6000 });
+    await expect(workspace).toContainText('AccessibleAttachButton');
+    await expect(workspace).toContainText('Axe: PASS');
+  });
+
+  test('repeated file attachments respect maxFiles', async ({ page }) => {
+    await page.goto('/');
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(
+        Array.from({ length: 5 }, (_, index) =>
+          makeTempFile(`tokens-${index}.json`, '{"a":1}'),
+        ),
+      );
+    await expect(page.getByText('완료')).toHaveCount(5);
+
+    await page
+      .locator('input[type="file"]')
+      .setInputFiles(makeTempFile('overflow.json', '{"b":2}'));
+    await expect(page.getByRole('alert')).toContainText(
+      '파일을 하나만 첨부할 수 있습니다.',
+    );
+  });
+
+  test('artifact copy action writes the active tab content', async ({ page }) => {
+    await page.goto('/');
+    await page
+      .getByLabel('자동화 프롬프트 입력')
+      .fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
+    await page.getByRole('button', { name: '자동화 실행' }).click();
+
+    const workspace = page.getByLabel('생성물 워크스페이스');
+    await expect(workspace).toContainText('PrimaryActionButton', { timeout: 6000 });
+    await page.getByRole('button', { name: 'Component 복사' }).click();
+
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toContain('PrimaryActionButton');
   });
 });

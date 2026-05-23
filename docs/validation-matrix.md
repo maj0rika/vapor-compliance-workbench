@@ -24,7 +24,7 @@ This matrix separates verified MVP behavior from final portfolio gates.
 | Requirement | Pass criteria | Current |
 | --- | --- | --- |
 | delimiter parse | component/story/test/a11y/token extracted | pass |
-| malformed output | no app crash | partial |
+| malformed output | no app crash | parser and DeepSeek SSE tests pass |
 | mode routing | each mode changes prompt context | pass |
 | attachment context | text included in request payload | pass |
 | prompt injection defense | attachments treated as untrusted | prompt-level only |
@@ -53,16 +53,16 @@ Required scenarios:
 | Scenario | Status |
 | --- | --- |
 | empty state + artifact empty workspace | pass |
-| component generation + validation badges | pass with mock validation in E2E; live DeepSeek path calls real endpoint |
+| component generation + validation badges | pass |
 | file attach content | pass |
 | unsupported file rejection | pass |
-| maxFiles across repeated attachments | unit pass |
-| A11y Audit with TSX attachment | pending |
-| Token Sync with token JSON | pending |
+| maxFiles across repeated attachments | pass |
+| A11y Audit with TSX attachment | pass |
+| Token Sync with token JSON | pass |
 | abort | pass |
-| error recovery | partial |
+| error recovery | pass |
 | keyboard-only flow | pass |
-| copy action | pending |
+| copy action | pass |
 
 ## Interview Positioning
 
