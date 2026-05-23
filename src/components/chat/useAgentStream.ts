@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AgentClient, AgentRequest, ChatMessage } from '../../agent';
+import type {
+  AgentClient,
+  AgentRequest,
+  ChatMessage,
+  VerifiedSampleRun,
+} from '../../agent';
 
 export type UseAgentStreamResult = {
   messages: ChatMessage[];
   isStreaming: boolean;
   send: (request: AgentRequest) => void;
+  /** 모델 호출 없이 deterministic fixture 를 동일 artifact 경로에 삽입한다. */
+  loadSampleRun: (sample: VerifiedSampleRun) => void;
   /** 해당 어시스턴트 메시지를 직전 user 메시지로 다시 생성한다 (재시도). */
   regenerate: (assistantId: string) => void;
   cancel: () => void;
@@ -131,6 +138,35 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
     [runStream],
   );
 
+  const loadSampleRun = useCallback((sample: VerifiedSampleRun) => {
+    abortRef.current?.abort();
+    abortRef.current = null;
+
+    const now = Date.now();
+    const userMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'user',
+      text: sample.request.text,
+      status: 'done',
+      createdAt: now,
+      attachments: sample.request.attachments,
+      request: sample.request,
+    };
+    const assistantMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      role: 'assistant',
+      text: sample.assistantText,
+      status: 'done',
+      createdAt: now,
+      draft: sample.draft,
+      artifactSource: sample.artifactSource,
+      artifactProvenance: sample.artifactProvenance,
+    };
+
+    setIsStreaming(false);
+    setMessages((prev) => [...prev, userMessage, assistantMessage]);
+  }, []);
+
   const regenerate = useCallback(
     (assistantId: string) => {
       const index = messages.findIndex((m) => m.id === assistantId);
@@ -172,5 +208,5 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
     abortRef.current?.abort();
   }, []);
 
-  return { messages, isStreaming, send, regenerate, cancel };
+  return { messages, isStreaming, send, loadSampleRun, regenerate, cancel };
 }

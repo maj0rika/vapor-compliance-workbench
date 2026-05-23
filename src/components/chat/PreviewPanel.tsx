@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Badge, Button, IconButton, Text } from '@vapor-ui/core';
 import { CloseOutlineIcon, CopyOutlineIcon } from '@vapor-ui/icons';
+import type { ArtifactProvenance } from '../../agent';
 import { Markdown } from './Markdown';
 
 type ArtifactTab = 'canvas' | 'component' | 'story' | 'test' | 'validation';
@@ -30,6 +31,8 @@ export type PreviewPanelProps = {
   draft: string;
   /** 실제 validation runner 에 다시 전달할 delimiter 기반 artifact 원문. */
   artifactSource?: string;
+  /** artifact provenance 를 표시해 sample 과 모델 응답을 구분한다. */
+  artifactProvenance?: ArtifactProvenance;
   /** 실제 validation runner 상태를 상위 pipeline rail 에 반영한다. */
   onValidationStateChange?: (state: ValidationPipelineState) => void;
   onRepair?: (payload: {
@@ -59,6 +62,7 @@ const TAB_LABELS: Record<ArtifactTab, string> = {
 export function PreviewPanel({
   draft,
   artifactSource,
+  artifactProvenance,
   onValidationStateChange,
   onRepair,
   onClose,
@@ -134,6 +138,12 @@ export function PreviewPanel({
   const failedGates = validationResult ? extractFailedGates(validationResult) : [];
   const canApprove = validationResult?.status === 'pass';
   const canRepair = Boolean(artifactSource && validationResult && failedGates.length > 0 && onRepair);
+  const isVerifiedSample = artifactProvenance === 'deterministic-sample';
+  const showCompactValidationWaiting =
+    isVerifiedSample &&
+    !validationResult &&
+    validationStatus === 'idle' &&
+    !validationOverride;
 
   return (
     <aside
@@ -197,7 +207,7 @@ export function PreviewPanel({
               Copy failing output
             </Button>
           )}
-          {validationResult && (
+          {artifactSource && (
             <Button
               size="sm"
               variant="outline"
@@ -221,6 +231,38 @@ export function PreviewPanel({
         </div>
       </header>
 
+      {isVerifiedSample && (
+        <div
+          aria-label="Verified sample provenance"
+          className="grid gap-v-100 border-b border-v-normal bg-v-primary-100 px-v-200 py-v-150"
+        >
+          <div className="flex flex-wrap gap-1">
+            <Badge size="sm" colorPalette="primary">
+              Verified sample run
+            </Badge>
+            <Badge size="sm" colorPalette="warning">
+              Deterministic fixture
+            </Badge>
+            <Badge size="sm" colorPalette="warning">
+              No DeepSeek call
+            </Badge>
+            <Badge size="sm" colorPalette="success">
+              Same parser
+            </Badge>
+            <Badge size="sm" colorPalette="success">
+              Same Canvas runtime
+            </Badge>
+            <Badge size="sm" colorPalette="success">
+              Same validation runner
+            </Badge>
+          </div>
+          <Text typography="body4" foreground="hint-200">
+            Validation remains waiting until Run validation returns real
+            /api/deepseek/validate output.
+          </Text>
+        </div>
+      )}
+
       {visibleSections.length > 0 && (
         <div
           role="tablist"
@@ -243,7 +285,7 @@ export function PreviewPanel({
         </div>
       )}
 
-      {validation && (
+      {validation && !showCompactValidationWaiting && (
         <div className="flex flex-wrap gap-1 border-b border-v-normal px-v-200 py-v-150">
           {extractValidationBadges(validation.content).map((item) => (
             <Badge
@@ -260,6 +302,13 @@ export function PreviewPanel({
               {item.label}: {item.status.toUpperCase()}
             </Badge>
           ))}
+        </div>
+      )}
+      {validation && showCompactValidationWaiting && (
+        <div className="flex flex-wrap gap-1 border-b border-v-normal px-v-200 py-v-100">
+          <Badge size="sm" colorPalette="warning">
+            Validation: waiting for runner output
+          </Badge>
         </div>
       )}
       {approved && (
@@ -362,7 +411,7 @@ function ArtifactCanvas({
 
   if (!previewSrc) {
     return (
-      <div className="flex h-full min-h-[360px] flex-col gap-v-200">
+      <div className="flex h-full min-h-[260px] flex-col gap-v-150">
         <div className="flex min-w-0 flex-col gap-0.5">
           <Text typography="subtitle2">Canvas unavailable</Text>
           <Text typography="body4" foreground="hint-200">
@@ -391,8 +440,8 @@ function ArtifactCanvas({
             sandboxed generated component preview
           </Text>
         </div>
-        <Badge size="sm" colorPalette="success">
-          Runtime render
+        <Badge size="sm" colorPalette="primary">
+          Canvas preview
         </Badge>
       </div>
       <div className="flex flex-wrap items-center gap-1">
@@ -426,7 +475,7 @@ function ArtifactCanvas({
         title="Generated artifact canvas"
         sandbox="allow-scripts allow-same-origin"
         src={previewSrc}
-        className="min-h-[280px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
+        className="min-h-[180px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
       />
     </div>
   );

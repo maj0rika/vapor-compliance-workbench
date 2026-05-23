@@ -3,6 +3,7 @@ import { Button, Text } from '@vapor-ui/core';
 import {
   DeepSeekAgentClient,
   MockAgentClient,
+  createVerifiedSampleRun,
   type AgentClient,
 } from '../../agent';
 import { PromptBar, type PromptModeOption } from '../prompt';
@@ -44,7 +45,7 @@ export function ChatScreen({
   client,
 }: ChatScreenProps) {
   const agent = useMemo(() => client ?? createDefaultAgentClient(), [client]);
-  const { messages, isStreaming, send, regenerate, cancel } =
+  const { messages, isStreaming, send, loadSampleRun, regenerate, cancel } =
     useAgentStream(agent);
 
   // 사용자가 명시적으로 닫은 artifact 의 id. 워크스페이스는 기본 열림이며,
@@ -104,6 +105,7 @@ export function ChatScreen({
   );
   const latestDraft = draftMessage?.draft ?? '';
   const latestArtifactSource = draftMessage?.artifactSource;
+  const latestArtifactProvenance = draftMessage?.artifactProvenance;
   const draftId = draftMessage?.id;
   const artifactRunId = draftMessage
     ? `${draftMessage.id}:${draftMessage.createdAt}`
@@ -125,6 +127,12 @@ export function ChatScreen({
   const handlePickSuggestion = (suggestion: string) => {
     setSeedText(suggestion);
     setSeed((value) => value + 1);
+  };
+
+  const handleRunVerifiedSample = () => {
+    setClosedDraftId(undefined);
+    setValidationPipeline({ state: 'idle' });
+    loadSampleRun(createVerifiedSampleRun());
   };
 
   return (
@@ -157,7 +165,10 @@ export function ChatScreen({
       <div ref={splitRef} className="flex min-h-0 flex-1 flex-col md:flex-row">
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {isEmpty ? (
-            <EmptyState onPick={handlePickSuggestion} />
+            <EmptyState
+              onPick={handlePickSuggestion}
+              onRunVerifiedSample={handleRunVerifiedSample}
+            />
           ) : (
             <ConversationView messages={messages} onRegenerate={regenerate} />
           )}
@@ -194,6 +205,7 @@ export function ChatScreen({
                 key={artifactRunId}
                 draft={latestDraft}
                 artifactSource={latestArtifactSource}
+                artifactProvenance={latestArtifactProvenance}
                 onValidationStateChange={(state) =>
                   setValidationPipeline({ artifactRunId, state })
                 }

@@ -16,6 +16,8 @@ export type MessageStatus =
   | 'error'
   | 'cancelled';
 
+export type ArtifactProvenance = 'generated' | 'deterministic-sample';
+
 /** 메시지에 함께 표시되는 첨부 파일 메타데이터. */
 export type MessageAttachment = {
   fileName: string;
@@ -39,6 +41,8 @@ export type ChatMessage = {
   draft?: string;
   /** 실제 validation runner 에 다시 보낼 delimiter 기반 원본 artifact. */
   artifactSource?: string;
+  /** 생성물 출처. deterministic sample 은 모델 호출이 아님을 UI 에 표시한다. */
+  artifactProvenance?: ArtifactProvenance;
   /** status 가 'error' 일 때의 사유. */
   errorMessage?: string;
   /** 재생성 시 같은 mode/첨부 맥락을 유지하기 위한 원본 요청. */

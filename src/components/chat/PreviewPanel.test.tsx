@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreviewPanel } from './PreviewPanel';
 
 const ARTIFACT = `## Component
@@ -71,6 +71,55 @@ describe('PreviewPanel', () => {
     expect(screen.getByText('Unit: PASS')).toBeInTheDocument();
     expect(screen.getByText('Axe: PASS')).toBeInTheDocument();
     expect(screen.getByText('Vapor token usage: PASS')).toBeInTheDocument();
+  });
+
+  it('deterministic sample provenance 와 validation 대기 상태를 표시한다', () => {
+    render(
+      <PreviewPanel
+        draft={ARTIFACT.replaceAll('PASS', 'CHECK')}
+        artifactSource="<artifact />"
+        artifactProvenance="deterministic-sample"
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByLabelText('Verified sample provenance')).toHaveTextContent(
+      'No DeepSeek call',
+    );
+    expect(screen.getByText('Same validation runner')).toBeInTheDocument();
+    expect(screen.getByText('Validation: waiting for runner output')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Approve artifact' })).toBeDisabled();
+  });
+
+  it('artifactSource 가 있어도 runner 결과 전에는 승인할 수 없다', () => {
+    render(<PreviewPanel draft={ARTIFACT} artifactSource="<artifact />" onClose={vi.fn()} />);
+
+    expect(screen.getByRole('button', { name: 'Approve artifact' })).toBeDisabled();
+  });
+
+  it('sample validation 실패 시 waiting notice 대신 runner error 를 보여준다', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('', { status: 500 }));
+
+    render(
+      <PreviewPanel
+        draft={ARTIFACT.replaceAll('PASS', 'CHECK')}
+        artifactSource="<artifact />"
+        artifactProvenance="deterministic-sample"
+        onClose={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Run validation' }));
+
+    await screen.findByText('Validation request failed (500).');
+    await waitFor(() =>
+      expect(
+        screen.queryByText('Validation: waiting for runner output'),
+      ).not.toBeInTheDocument(),
+    );
+    fetchSpy.mockRestore();
   });
 
   it('생성물이 비어 있으면 안내 문구를 보여준다', () => {

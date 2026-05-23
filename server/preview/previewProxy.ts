@@ -110,7 +110,7 @@ function previewEntry({
     'function PreviewApp() {',
     '  return (',
     `    <ThemeProvider defaultTheme={${JSON.stringify(theme)}}>`,
-    `      <main data-testid="artifact-canvas" aria-label={${JSON.stringify(`${primaryExport} preview`)}} style={{ display: 'grid', placeItems: 'center', minHeight: '100vh', padding: 32 }}>`,
+    `      <main data-testid="artifact-canvas" aria-label={${JSON.stringify(`${primaryExport} preview`)}} style={{ display: 'grid', placeItems: 'start center', minHeight: '100vh', padding: 24 }}>`,
     `        <Component disabled={${JSON.stringify(disabled)}}>{previewChildren}</Component>`,
     '      </main>',
     '    </ThemeProvider>',

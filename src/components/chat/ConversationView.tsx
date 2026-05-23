@@ -56,7 +56,8 @@ export function ConversationView({
             key={message.id}
             message={message}
             onRegenerate={
-              message.role === 'assistant'
+              message.role === 'assistant' &&
+              message.artifactProvenance !== 'deterministic-sample'
                 ? () => onRegenerate(message.id)
                 : undefined
             }

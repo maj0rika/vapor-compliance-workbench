@@ -35,11 +35,24 @@ class DraftReplaceClient implements AgentClient {
 }
 
 function Harness({ client }: { client: AgentClient }) {
-  const { messages, isStreaming, send, regenerate, cancel } = useAgentStream(client);
+  const { messages, isStreaming, send, loadSampleRun, regenerate, cancel } = useAgentStream(client);
   const assistant = messages.find((m) => m.role === 'assistant');
   return (
     <div>
       <button onClick={() => send({ text: '안녕' })}>send</button>
+      <button
+        onClick={() =>
+          loadSampleRun({
+            request: { text: 'Verified sample', mode: 'component' },
+            assistantText: 'deterministic fixture loaded',
+            draft: '## Component\n\n```tsx\nexport function Sample() { return null; }\n```',
+            artifactSource: '<artifact type="component" filename="Sample.tsx">```tsx\nexport function Sample() { return null; }\n```</artifact>',
+            artifactProvenance: 'deterministic-sample',
+          })
+        }
+      >
+        sample
+      </button>
       <button onClick={() => assistant && regenerate(assistant.id)}>regenerate</button>
       <button onClick={cancel}>cancel</button>
       <span data-testid="streaming">{String(isStreaming)}</span>
@@ -47,6 +60,7 @@ function Harness({ client }: { client: AgentClient }) {
       <span data-testid="assistant-status">{assistant?.status ?? 'none'}</span>
       <span data-testid="assistant-text">{assistant?.text ?? ''}</span>
       <span data-testid="assistant-draft">{assistant?.draft ?? ''}</span>
+      <span data-testid="assistant-provenance">{assistant?.artifactProvenance ?? ''}</span>
       <span data-testid="assistant-created-at">{assistant?.createdAt ?? ''}</span>
     </div>
   );
@@ -118,6 +132,25 @@ describe('useAgentStream', () => {
     expect(screen.getByTestId('assistant-draft')).toHaveTextContent('validated');
     expect(screen.getByTestId('assistant-draft')).not.toHaveTextContent(
       'pendingvalidated',
+    );
+  });
+
+  it('sample run 은 AgentClient 호출 없이 done artifact 를 추가한다', () => {
+    const client = new SpyAgentClient();
+    render(<Harness client={client} />);
+
+    fireEvent.click(screen.getByText('sample'));
+
+    expect(client.lastSignal).toBeUndefined();
+    expect(screen.getByTestId('streaming')).toHaveTextContent('false');
+    expect(screen.getByTestId('count')).toHaveTextContent('2');
+    expect(screen.getByTestId('assistant-status')).toHaveTextContent('done');
+    expect(screen.getByTestId('assistant-text')).toHaveTextContent(
+      'deterministic fixture loaded',
+    );
+    expect(screen.getByTestId('assistant-draft')).toHaveTextContent('Sample');
+    expect(screen.getByTestId('assistant-provenance')).toHaveTextContent(
+      'deterministic-sample',
     );
   });
 

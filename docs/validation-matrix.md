@@ -17,6 +17,7 @@ levels are defined in [Reality Check](./reality-check.md).
 | Generated Vitest runner | implemented | script-verified | temp workspace Vitest |
 | Generated Axe runner | implemented | script-verified | runtime `jest-axe` test |
 | Live validation endpoint | implemented | user-verifiable | Run validation calls `/api/deepseek/validate` from the workspace |
+| Verified sample run | implemented | user-verifiable | deterministic fixture uses same parser, Canvas runtime, and `/api/deepseek/validate`; no DeepSeek chat call |
 | Generated component Canvas | implemented | user-verifiable | sandbox iframe preview from `/api/deepseek/preview` Vite-transformed TSX entry |
 | Variant/theme controls | implemented | user-verifiable | Default/Disabled and Light/Dark controls covered by E2E |
 | Failure states | implemented | user-verifiable | broken raw-color artifact shows FAIL runner details |
@@ -36,6 +37,7 @@ levels are defined in [Reality Check](./reality-check.md).
 | prompt injection defense | attachments treated as untrusted | prompt-level only |
 | DeepSeek stream | `[DONE]`, malformed SSE, abort, network error handled | pass |
 | validation pending/result | generated completion then real result display for live DeepSeek artifacts | pass |
+| verified sample honesty | sample is labeled deterministic and does not call DeepSeek before validation | pass |
 | mock mode | deterministic E2E response | pass |
 
 ## Generated Artifact Validation
@@ -76,6 +78,7 @@ Required scenarios:
 | validation failure state | pass |
 | repair and re-validate loop | pass |
 | approve only after pass | pass |
+| verified sample no-chat + real validation gate | pass |
 
 ## Interview Positioning
 
@@ -84,9 +87,10 @@ Say:
 ```txt
 The product shell, prompt routing, artifact parsing, token check, live
 validation endpoint, and fixture generated-artifact validation are implemented.
-Mock validation is still used for deterministic UI E2E, while live DeepSeek
-artifacts call `/api/deepseek/validate` and npm run verify:generated remains the
-CLI generated code gate.
+Deterministic UI paths are labeled as fixtures. The verified sample run does not
+call DeepSeek, but it does use the same artifact parser, Canvas preview runtime,
+and `/api/deepseek/validate` runner as live artifacts. npm run verify:generated
+remains the CLI generated code gate.
 ```
 
 Do not say:

@@ -39,9 +39,11 @@ const WORKFLOW_STEPS = [
 export type EmptyStateProps = {
   /** 템플릿 선택 시 호출 — 선택한 문구를 입력창에 채운다. */
   onPick: (suggestion: string) => void;
+  /** deterministic sample 을 모델 호출 없이 workbench 에 로드한다. */
+  onRunVerifiedSample: () => void;
 };
 
-export function EmptyState({ onPick }: EmptyStateProps) {
+export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-start gap-4 overflow-y-auto p-v-400 pb-v-700 pt-v-500">
       <div className="grid max-w-[820px] gap-v-300">
@@ -74,6 +76,23 @@ export function EmptyState({ onPick }: EmptyStateProps) {
                 Vapor 토큰을 지키는 컴포넌트, Storybook story, Vitest 테스트,
                 Axe 접근성 체크까지 한 번에 생성합니다.
               </Text>
+            </div>
+
+            <div className="grid gap-v-150 rounded-v-300 border border-v-primary bg-v-primary-100 p-v-200">
+              <div className="flex min-w-0 flex-col gap-1">
+                <Text typography="subtitle2">Verified sample run</Text>
+                <Text typography="body4" foreground="hint-200">
+                  deterministic fixture · no DeepSeek call · same parser, Canvas
+                  runtime, and validation runner
+                </Text>
+              </div>
+              <Button
+                size="md"
+                colorPalette="primary"
+                onClick={onRunVerifiedSample}
+              >
+                Run verified sample
+              </Button>
             </div>
 
             <div className="grid gap-2 sm:grid-cols-2">
