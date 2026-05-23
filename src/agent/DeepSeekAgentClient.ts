@@ -153,7 +153,7 @@ export class DeepSeekAgentClient implements AgentClient {
     const preview = buildPreviewArtifact(responseText);
     if (!preview || signal?.aborted) return;
 
-    yield { type: 'draft', value: preview };
+    yield { type: 'draft', value: preview, source: responseText };
 
     const validated = await applyRemoteValidation(
       preview,
@@ -162,7 +162,7 @@ export class DeepSeekAgentClient implements AgentClient {
       signal,
     );
     if (!validated || signal?.aborted) return;
-    yield { type: 'draft', value: validated, replace: true };
+    yield { type: 'draft', value: validated, replace: true, source: responseText };
   }
 }
 

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Text } from '@vapor-ui/core';
 import {
   DeepSeekAgentClient,
@@ -48,6 +48,9 @@ export function ChatScreen({
   const [closedDraftId, setClosedDraftId] = useState<string | undefined>(
     undefined,
   );
+  const [previewWidth, setPreviewWidth] = useState(44);
+  const [isResizing, setIsResizing] = useState(false);
+  const splitRef = useRef<HTMLDivElement>(null);
 
   // 작업 템플릿으로 입력창을 채우기 위한 seed. key 와 함께 PromptBar 를 remount 한다.
   const [seed, setSeed] = useState(0);
@@ -62,12 +65,37 @@ export function ChatScreen({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isStreaming, cancel]);
 
+  useEffect(() => {
+    if (!isResizing) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const bounds = splitRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+      const nextWidth = ((bounds.right - event.clientX) / bounds.width) * 100;
+      setPreviewWidth(Math.min(62, Math.max(34, nextWidth)));
+    };
+    const handlePointerUp = () => setIsResizing(false);
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp, { once: true });
+
+    return () => {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+  }, [isResizing]);
+
   // 생성 artifact 를 가진 가장 최근 어시스턴트 메시지.
   const draftMessage = useMemo(
     () => [...messages].reverse().find((m) => m.role === 'assistant' && m.draft),
     [messages],
   );
   const latestDraft = draftMessage?.draft ?? '';
+  const latestArtifactSource = draftMessage?.artifactSource;
   const draftId = draftMessage?.id;
 
   const isEmpty = messages.length === 0;
@@ -98,8 +126,8 @@ export function ChatScreen({
       </div>
 
       {/* 본문: 대화 thread | artifact workspace */}
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <div className="flex min-h-0 flex-1 flex-col">
+      <div ref={splitRef} className="flex min-h-0 flex-1 flex-col md:flex-row">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {isEmpty ? (
             <EmptyState onPick={handlePickSuggestion} />
           ) : (
@@ -108,13 +136,54 @@ export function ChatScreen({
         </div>
 
         {showPreview && (
-          <div className="flex min-h-0 flex-1 flex-col md:max-w-[44%]">
-            <PreviewPanel
-              draft={latestDraft}
-              canClose={Boolean(draftId)}
-              onClose={() => setClosedDraftId(draftId)}
-            />
-          </div>
+          <>
+            <button
+              type="button"
+              aria-label={`Artifact workspace width ${Math.round(previewWidth)} percent`}
+              className="hidden w-2 cursor-col-resize appearance-none items-stretch justify-center border-0 bg-v-canvas-100 p-0 hover:bg-v-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-v-primary md:flex"
+              onPointerDown={(event) => {
+                event.preventDefault();
+                setIsResizing(true);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault();
+                  setPreviewWidth((value) => Math.min(62, value + 4));
+                }
+                if (event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  setPreviewWidth((value) => Math.max(34, value - 4));
+                }
+              }}
+            >
+              <span className="my-v-300 w-px rounded-full bg-v-normal" />
+            </button>
+            <div
+              className="flex min-h-0 min-w-0 flex-col md:flex-none"
+              style={{ width: `min(100%, ${previewWidth}%)` }}
+            >
+              <PreviewPanel
+                key={draftId}
+                draft={latestDraft}
+                artifactSource={latestArtifactSource}
+                onRepair={(payload) =>
+                  send({
+                    text:
+                      '실패한 validation 결과를 바탕으로 수정해줘. 실패한 게이트만 고치고 전체 artifact를 다시 반환해.',
+                    mode: 'component',
+                    previousArtifactSource: payload.artifactSource,
+                    validationResult: payload.validationResult,
+                    repairIntent: {
+                      failedGates: payload.failedGates,
+                      maxAttempts: 1,
+                    },
+                  })
+                }
+                canClose={Boolean(draftId)}
+                onClose={() => setClosedDraftId(draftId)}
+              />
+            </div>
+          </>
         )}
       </div>
 

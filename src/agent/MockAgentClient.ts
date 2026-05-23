@@ -42,7 +42,13 @@ export class MockAgentClient implements AgentClient {
     request: AgentRequest,
     signal?: AbortSignal,
   ): AsyncIterable<AgentEvent> {
-    const script = selectScript(request.text, request.mode);
+    const script = request.repairIntent
+      ? {
+          reply:
+            '실패한 validation 결과를 바탕으로 수정했습니다. raw color를 제거하고 Vapor primitive 기반 artifact로 재생성했습니다.',
+          draft: selectScript('primary button', 'component').draft,
+        }
+      : selectScript(request.text, request.mode);
 
     try {
       for (const token of tokenize(script.reply)) {
@@ -68,7 +74,7 @@ export class MockAgentClient implements AgentClient {
           .replace('- Axe: CHECK', '- Axe: PASS');
         for (const token of tokenize(preview)) {
           await delay(TOKEN_DELAY_MS, signal);
-          yield { type: 'draft', value: token };
+          yield { type: 'draft', value: token, source: script.draft };
         }
       }
 

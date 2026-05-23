@@ -28,4 +28,32 @@ test.describe('workbench layout', () => {
       expect(overflow).toBeLessThanOrEqual(1);
     });
   }
+
+  test('resizes the artifact workspace with the splitter', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto('/');
+    await page
+      .getByLabel('자동화 프롬프트 입력')
+      .fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
+    await page.getByRole('button', { name: '자동화 실행' }).click();
+
+    const workspace = page.getByLabel('생성물 워크스페이스');
+    await expect(workspace).toBeVisible({ timeout: 6000 });
+    const before = await workspace.boundingBox();
+
+    const splitter = page.getByRole('button', {
+      name: /Artifact workspace width/,
+    });
+    const splitterBox = await splitter.boundingBox();
+    if (!before || !splitterBox) throw new Error('splitter layout missing');
+
+    await page.mouse.move(splitterBox.x + splitterBox.width / 2, splitterBox.y + 20);
+    await page.mouse.down();
+    await page.mouse.move(splitterBox.x - 120, splitterBox.y + 20);
+    await page.mouse.up();
+
+    const after = await workspace.boundingBox();
+    if (!after) throw new Error('workspace layout missing after resize');
+    expect(after.width).toBeGreaterThan(before.width + 80);
+  });
 });

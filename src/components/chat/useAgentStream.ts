@@ -51,6 +51,7 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
     async (request: AgentRequest, assistantId: string, signal: AbortSignal) => {
       let text = '';
       let draft = '';
+      let artifactSource: string | undefined;
       try {
         for await (const event of client.sendMessage(request, signal)) {
           if (!mountedRef.current) return;
@@ -61,7 +62,11 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
               break;
             case 'draft':
               draft = event.replace ? event.value : draft + event.value;
-              patchMessage(assistantId, { draft });
+              artifactSource = event.source ?? artifactSource;
+              patchMessage(assistantId, {
+                draft,
+                artifactSource,
+              });
               break;
             case 'done':
               patchMessage(assistantId, { status: 'done' });
@@ -146,6 +151,7 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
                 text: '',
                 status: 'streaming',
                 draft: undefined,
+                artifactSource: undefined,
                 errorMessage: undefined,
               }
             : message,

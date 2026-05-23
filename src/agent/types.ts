@@ -37,6 +37,8 @@ export type ChatMessage = {
   attachments?: MessageAttachment[];
   /** 어시스턴트가 작성한 생성 artifact (PreviewPanel 에 렌더링). */
   draft?: string;
+  /** 실제 validation runner 에 다시 보낼 delimiter 기반 원본 artifact. */
+  artifactSource?: string;
   /** status 가 'error' 일 때의 사유. */
   errorMessage?: string;
   /** 재생성 시 같은 mode/첨부 맥락을 유지하기 위한 원본 요청. */
@@ -49,6 +51,12 @@ export type AgentRequest = {
   mode?: AgentMode;
   dataSources?: string[];
   attachments?: MessageAttachment[];
+  previousArtifactSource?: string;
+  validationResult?: unknown;
+  repairIntent?: {
+    failedGates: Array<'typecheck' | 'unit' | 'runtime' | 'axe' | 'token' | 'cleanup'>;
+    maxAttempts: number;
+  };
 };
 
 /**
@@ -60,6 +68,6 @@ export type AgentRequest = {
  */
 export type AgentEvent =
   | { type: 'token'; value: string }
-  | { type: 'draft'; value: string; replace?: boolean }
+  | { type: 'draft'; value: string; replace?: boolean; source?: string }
   | { type: 'done' }
   | { type: 'error'; message: string };

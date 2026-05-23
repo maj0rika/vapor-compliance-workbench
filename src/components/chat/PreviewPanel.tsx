@@ -27,6 +27,13 @@ type CanvasTheme = 'light' | 'dark';
 export type PreviewPanelProps = {
   /** 에이전트가 작성 중/완료한 생성 artifact. 스트리밍 중 점진 갱신된다. */
   draft: string;
+  /** 실제 validation runner 에 다시 전달할 delimiter 기반 artifact 원문. */
+  artifactSource?: string;
+  onRepair?: (payload: {
+    artifactSource: string;
+    validationResult: RemoteValidationResult;
+    failedGates: Array<'typecheck' | 'unit' | 'runtime' | 'axe' | 'token' | 'cleanup'>;
+  }) => void;
   onClose: () => void;
   canClose?: boolean;
 };
@@ -36,7 +43,7 @@ const TAB_LABELS: Record<ArtifactTab, string> = {
   component: 'Component',
   story: 'Story',
   test: 'Test',
-  validation: 'Validation',
+  validation: 'Tests',
 };
 
 /**
@@ -44,8 +51,18 @@ const TAB_LABELS: Record<ArtifactTab, string> = {
  *
  * 대화는 의사결정 기록이고, 이 패널은 실제 생성물을 탭 단위로 검토하는 영역이다.
  */
-export function PreviewPanel({ draft, onClose, canClose = true }: PreviewPanelProps) {
+export function PreviewPanel({
+  draft,
+  artifactSource,
+  onRepair,
+  onClose,
+  canClose = true,
+}: PreviewPanelProps) {
   const sections = useMemo(() => parseArtifactSections(draft), [draft]);
+  const [validationOverride, setValidationOverride] = useState<string | undefined>();
+  const [validationStatus, setValidationStatus] = useState<'idle' | 'running' | 'error'>('idle');
+  const [validationResult, setValidationResult] = useState<RemoteValidationResult | undefined>();
+  const [approved, setApproved] = useState(false);
   const canvas = useMemo(() => buildCanvasModel(sections), [sections]);
   const [activeTab, setActiveTab] = useState<ArtifactTab>('canvas');
   const [activeVariantName, setActiveVariantName] = useState('Default');
@@ -63,14 +80,47 @@ export function PreviewPanel({ draft, onClose, canClose = true }: PreviewPanelPr
         }),
       }
     : undefined;
-  const visibleSections = canvasSection ? [canvasSection, ...sections] : sections;
+  const validationSection = validationOverride
+    ? { id: 'validation' as const, label: TAB_LABELS.validation, content: validationOverride }
+    : undefined;
+  const codeSections = validationSection
+    ? [
+        ...sections.filter((section) => section.id !== 'validation'),
+        validationSection,
+      ]
+    : sections.map((section) =>
+        section.id === 'validation' ? { ...section, label: TAB_LABELS.validation } : section,
+      );
+  const visibleSections = canvasSection ? [canvasSection, ...codeSections] : codeSections;
   const active = visibleSections.find((section) => section.id === activeTab) ?? visibleSections[0];
-  const validation = sections.find((section) => section.id === 'validation');
+  const validation = visibleSections.find((section) => section.id === 'validation');
 
   const handleCopy = () => {
     if (!active) return;
     void navigator.clipboard?.writeText(active.content);
   };
+  const handleRunValidation = () => {
+    if (!artifactSource || validationStatus === 'running') return;
+    setValidationStatus('running');
+    void runValidation(artifactSource)
+      .then((result) => {
+        setValidationResult(result);
+        setValidationOverride(formatValidationResult(result));
+        setActiveTab('validation');
+        setApproved(false);
+        setValidationStatus('idle');
+      })
+      .catch((error) => {
+        setValidationResult(undefined);
+        setValidationOverride(formatValidationError(error));
+        setActiveTab('validation');
+        setApproved(false);
+        setValidationStatus('error');
+      });
+  };
+  const failedGates = validationResult ? extractFailedGates(validationResult) : [];
+  const canApprove = validationResult?.status === 'pass';
+  const canRepair = Boolean(artifactSource && validationResult && failedGates.length > 0 && onRepair);
 
   return (
     <aside
@@ -94,6 +144,46 @@ export function PreviewPanel({ draft, onClose, canClose = true }: PreviewPanelPr
             >
               <CopyOutlineIcon size={16} />
             </IconButton>
+          )}
+          {artifactSource && (
+            <Button
+              size="sm"
+              variant="outline"
+              colorPalette="primary"
+              disabled={validationStatus === 'running'}
+              onClick={handleRunValidation}
+            >
+              {validationStatus === 'running' ? 'Running' : 'Run validation'}
+            </Button>
+          )}
+          {artifactSource && validationResult && (
+            <Button
+              size="sm"
+              variant="outline"
+              colorPalette="primary"
+              disabled={!canRepair}
+              onClick={() =>
+                canRepair &&
+                onRepair?.({
+                  artifactSource,
+                  validationResult,
+                  failedGates,
+                })
+              }
+            >
+              Fix with Agent
+            </Button>
+          )}
+          {validationResult && (
+            <Button
+              size="sm"
+              variant="outline"
+              colorPalette="success"
+              disabled={!canApprove}
+              onClick={() => setApproved(true)}
+            >
+              Approve artifact
+            </Button>
           )}
           {canClose && (
             <IconButton
@@ -136,11 +226,24 @@ export function PreviewPanel({ draft, onClose, canClose = true }: PreviewPanelPr
             <Badge
               key={item.label}
               size="sm"
-              colorPalette={item.pass ? 'success' : 'danger'}
+              colorPalette={
+                item.status === 'pass'
+                  ? 'success'
+                  : item.status === 'fail'
+                    ? 'danger'
+                    : 'warning'
+              }
             >
-              {item.label}: {item.pass ? 'PASS' : 'CHECK'}
+              {item.label}: {item.status.toUpperCase()}
             </Badge>
           ))}
+        </div>
+      )}
+      {approved && (
+        <div className="border-b border-v-normal px-v-200 py-v-150">
+          <Badge size="md" colorPalette="success">
+            Artifact approved
+          </Badge>
         </div>
       )}
 
@@ -381,12 +484,106 @@ function canvasHtml({
 </html>`;
 }
 
-function extractValidationBadges(content: string): Array<{ label: string; pass: boolean }> {
-  const labels = ['Typecheck', 'Unit', 'Axe', 'Vapor token usage'];
+function extractValidationBadges(
+  content: string,
+): Array<{ label: string; status: 'pass' | 'fail' | 'check' }> {
+  const labels = ['Typecheck', 'Unit', 'Runtime Render', 'Axe', 'Vapor token usage', 'Cleanup'];
   return labels.map((label) => ({
     label,
-    pass: new RegExp(`${escapeRegExp(label)}\\s*:\\s*PASS`, 'i').test(content),
+    status: readValidationStatus(content, label),
   }));
+}
+
+function readValidationStatus(content: string, label: string): 'pass' | 'fail' | 'check' {
+  const match = content.match(new RegExp(`${escapeRegExp(label)}\\s*:\\s*(PASS|FAIL|CHECK)`, 'i'));
+  const status = match?.[1]?.toLowerCase();
+  return status === 'pass' || status === 'fail' ? status : 'check';
+}
+
+type RemoteValidationResult = {
+  status: 'pass' | 'warn' | 'fail';
+  durationMs: number;
+  details: Array<{
+    label: string;
+    status: 'pass' | 'warn' | 'fail';
+    message: string;
+    durationMs?: number;
+    output?: string;
+  }>;
+};
+
+async function runValidation(markdown: string): Promise<RemoteValidationResult> {
+  const response = await fetch('/api/deepseek/validate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ markdown }),
+  });
+  if (!response.ok) {
+    throw new Error(`Validation request failed (${response.status}).`);
+  }
+  return (await response.json()) as RemoteValidationResult;
+}
+
+function formatValidationResult(result: RemoteValidationResult): string {
+  const details = new Map(result.details.map((detail) => [detail.label, detail]));
+  const labels = ['Typecheck', 'Unit', 'Runtime Render', 'Axe', 'Vapor token usage', 'Cleanup'];
+  return [
+    '## Tests',
+    '',
+    ...labels.map((label) => {
+      const detail = details.get(label);
+      const status =
+        detail?.status === 'pass' ? 'PASS' : detail?.status === 'fail' ? 'FAIL' : 'CHECK';
+      return `- ${label}: ${status}`;
+    }),
+    '',
+    '### Runner details',
+    ...result.details.map((detail) => {
+      const duration = detail.durationMs ? ` (${detail.durationMs}ms)` : '';
+      return `- ${detail.label}: ${detail.status.toUpperCase()}${duration} - ${detail.message}`;
+    }),
+    `- Duration: ${result.durationMs}ms`,
+  ].join('\n');
+}
+
+function formatValidationError(error: unknown): string {
+  return [
+    '## Tests',
+    '',
+    '- Typecheck: CHECK',
+    '- Unit: CHECK',
+    '- Runtime Render: CHECK',
+    '- Axe: CHECK',
+    '- Vapor token usage: CHECK',
+    '- Cleanup: CHECK',
+    '',
+    '### Runner details',
+    error instanceof Error ? error.message : 'Validation request failed.',
+  ].join('\n');
+}
+
+function extractFailedGates(
+  result: RemoteValidationResult,
+): Array<'typecheck' | 'unit' | 'runtime' | 'axe' | 'token' | 'cleanup'> {
+  return result.details.flatMap((detail) => {
+    if (detail.status !== 'fail') return [];
+    switch (detail.label) {
+      case 'Typecheck':
+        return ['typecheck'];
+      case 'Unit':
+        return ['unit'];
+      case 'Runtime Render':
+        return ['runtime'];
+      case 'Axe':
+        return ['axe'];
+      case 'Vapor token usage':
+        return ['token'];
+      case 'Cleanup':
+        return ['cleanup'];
+      default:
+        return [];
+    }
+  });
 }
 
 function escapeRegExp(value: string): string {

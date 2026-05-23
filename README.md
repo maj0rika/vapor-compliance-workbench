@@ -10,6 +10,9 @@ Vapor Design System 기반 컴포넌트 생성, Storybook 스토리 작성, Vite
 생성 컴포넌트는 Canvas 탭의 sandboxed iframe 에 렌더링되며, 기본/비활성 variant 와
 light/dark theme 를 전환할 수 있습니다. 현재 Canvas 는 parsed artifact/story
 metadata 기반 preview 이며, 임의 TSX를 직접 컴파일하는 runtime 은 후속 강화 대상입니다.
+Tests 탭에서는 UI에서 직접 real validation runner 를 실행할 수 있고, 실패한 gate는
+Fix with Agent 루프로 다시 보내 재생성·재검증한 뒤 모든 gate가 통과해야 approve 할 수
+있습니다.
 
 > 데모: 로컬에서 `npm run dev` 로 실행할 수 있습니다. DeepSeek 연결은
 > `.env.local` 의 `DEEPSEEK_API_KEY` 를 서버 프록시에서만 읽습니다.

@@ -43,7 +43,18 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(
+      page
+        .frameLocator('iframe[title="Generated artifact canvas"]')
+        .getByRole('button', { name: 'Deploy component' }),
+    ).toBeVisible();
+    await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('PrimaryActionButton');
+    await page.getByRole('tab', { name: 'Tests' }).click();
     await expect(workspace).toContainText('Typecheck: PASS');
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
@@ -138,7 +149,9 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible({ timeout: 6000 });
+    await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('figmaToVaporTokenMap');
+    await page.getByRole('tab', { name: 'Tests' }).click();
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
 
@@ -154,7 +167,9 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible({ timeout: 6000 });
+    await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('AccessibleAttachButton');
+    await page.getByRole('tab', { name: 'Tests' }).click();
     await expect(workspace).toContainText('Axe: PASS');
   });
 
@@ -185,7 +200,11 @@ test.describe('Vapor DS automation flow', () => {
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
     const workspace = page.getByLabel('생성물 워크스페이스');
-    await expect(workspace).toContainText('PrimaryActionButton', { timeout: 6000 });
+    await expect(page.getByRole('tab', { name: 'Component' })).toBeVisible({
+      timeout: 6000,
+    });
+    await page.getByRole('tab', { name: 'Component' }).click();
+    await expect(workspace).toContainText('PrimaryActionButton');
     await page.getByRole('button', { name: 'Component 복사' }).click();
 
     await expect

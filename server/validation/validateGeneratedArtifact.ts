@@ -71,6 +71,16 @@ export async function validateGeneratedArtifact(
       output: unitAndAxe.output,
     });
     details.push({
+      label: 'Runtime Render',
+      status: unitAndAxe.exitCode === 0 ? 'pass' : 'fail',
+      message:
+        unitAndAxe.exitCode === 0
+          ? 'Generated component mounted in the runtime axe harness.'
+          : 'Generated component failed to render in the runtime axe harness.',
+      durationMs: unitAndAxe.durationMs,
+      output: unitAndAxe.output,
+    });
+    details.push({
       label: 'Axe',
       status: unitAndAxe.exitCode === 0 ? 'pass' : 'fail',
       message:

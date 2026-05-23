@@ -16,11 +16,12 @@ levels are defined in [Reality Check](./reality-check.md).
 | Generated typecheck runner | implemented | script-verified | `npm run verify:generated` |
 | Generated Vitest runner | implemented | script-verified | temp workspace Vitest |
 | Generated Axe runner | implemented | script-verified | runtime `jest-axe` test |
-| Live validation endpoint | implemented | script-verified | `/api/deepseek/validate` runs the temp workspace gate |
+| Live validation endpoint | implemented | user-verifiable | Run validation calls `/api/deepseek/validate` from the workspace |
 | Generated component Canvas | implemented | ui-visible | sandbox iframe preview from parsed artifact/story metadata |
 | Variant/theme controls | implemented | user-verifiable | Default/Disabled and Light/Dark controls covered by E2E |
-| Repair loop | not-started | not-started | failed validation is not sent back to agent yet |
-| Approval gate | not-started | not-started | no approve-only-after-pass state yet |
+| Failure states | implemented | user-verifiable | broken raw-color artifact shows FAIL runner details |
+| Repair loop | implemented | user-verifiable | failed gates are sent back through Fix with Agent |
+| Approval gate | implemented | user-verifiable | approval is disabled until all gates pass |
 | Bundle budget | implemented | script-verified | `npm run verify:bundle` enforces initial JS gzip <= 200KB |
 | Lighthouse budget | implemented | script-verified | `npm run verify:lighthouse` enforces app quality scores and vitals |
 
@@ -46,6 +47,7 @@ levels are defined in [Reality Check](./reality-check.md).
 | file write | `server/validation/writeGeneratedFiles.ts` | generated files written | pass |
 | typecheck | `server/validation/validateGeneratedArtifact.ts` | TS error 0 | pass |
 | unit | `server/validation/validateGeneratedArtifact.ts` | generated tests pass | pass |
+| runtime render | `server/validation/validateGeneratedArtifact.ts` | component mounts in runtime harness | pass |
 | axe | `server/validation/validateGeneratedArtifact.ts` | violations 0 | pass |
 | token | `server/validation/validateGeneratedArtifact.ts` | fail 0, warn below threshold | pass |
 | aggregate | `server/validation/validateGeneratedArtifact.ts` | normalized result | pass |
@@ -68,6 +70,12 @@ Required scenarios:
 | error recovery | pass |
 | keyboard-only flow | pass |
 | copy action | pass |
+| Canvas render | pass |
+| variant/theme switch | pass |
+| Run validation from UI | pass |
+| validation failure state | pass |
+| repair and re-validate loop | pass |
+| approve only after pass | pass |
 
 ## Interview Positioning
 

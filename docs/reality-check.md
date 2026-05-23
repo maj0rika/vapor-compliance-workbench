@@ -24,13 +24,13 @@ can be inspected and repaired from the UI.
 | Natural-language Vapor request | user-verifiable | Composer, mode selector, attachment flow, E2E coverage | Needs repair-loop payload extension later. |
 | Component/story/test parsing | ui-visible | Delimiter parser tests and artifact workspace tabs | Missing artifact metadata for primary export, variants, and default props. |
 | Code artifact display | ui-visible | Component / Story / Test tabs | Code display is not a Canvas preview. |
-| Live DeepSeek validation endpoint | script-verified | `/api/deepseek/validate`, `verify:generated` | UI has no explicit Run validation action yet. |
+| Live DeepSeek validation endpoint | user-verifiable | `/api/deepseek/validate`, `verify:generated`, Run validation E2E | Static hosting still needs equivalent server/serverless proxy. |
 | Generated component Canvas | ui-visible | Canvas tab renders a sandboxed iframe from parsed artifact/story metadata | Full TSX compiler runtime is still pending. |
 | Variant and theme switching | user-verifiable | Canvas controls switch Default/Disabled and Light/Dark in E2E | More generated metadata is needed for arbitrary variants. |
-| Runtime render result | not-started | Runner has Axe smoke render only | Must be visible as a first-class validation gate. |
-| Failure states | implemented | Runner can return fail details | Need broken-artifact UI fixture and E2E. |
-| Repair loop | not-started | None | Failed validation must feed the next agent request. |
-| Approval gate | not-started | None | Approve only after all gates pass. |
+| Runtime render result | user-verifiable | Tests tab shows Runtime Render runner detail | Full TSX preview runtime remains pending. |
+| Failure states | user-verifiable | Broken raw-color artifact E2E shows FAIL and runner detail | More failure fixtures can be added for type/unit/axe-specific failures. |
+| Repair loop | user-verifiable | Fix with Agent sends failed gates and validation result into the next request | Current deterministic mock repairs to a known passing component. |
+| Approval gate | user-verifiable | Approve artifact stays disabled until validation status is pass | Persistence/export of approved artifacts is not implemented. |
 
 ## Non-Overclaim Rule
 

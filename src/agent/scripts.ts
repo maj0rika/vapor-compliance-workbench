@@ -189,6 +189,60 @@ No raw color, spacing, or radius values are introduced.
 </notes>
 `;
 
+const BROKEN_ARTIFACT = `<artifact type="component" filename="BrokenRawColorButton.tsx">
+\`\`\`tsx
+export function BrokenRawColorButton({ children }: { children: string }) {
+  return (
+    <button type="button" style={{ color: "#ffffff", backgroundColor: "#2563eb" }}>
+      {children}
+    </button>
+  );
+}
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="BrokenRawColorButton.stories.tsx">
+\`\`\`tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { BrokenRawColorButton } from './BrokenRawColorButton';
+
+const meta = {
+  title: 'Vapor Automation/BrokenRawColorButton',
+  component: BrokenRawColorButton,
+  args: { children: 'Broken action' },
+} satisfies Meta<typeof BrokenRawColorButton>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="BrokenRawColorButton.test.tsx">
+\`\`\`tsx
+import { render, screen } from '@testing-library/react';
+import { describe, expect, it } from 'vitest';
+import { BrokenRawColorButton } from './BrokenRawColorButton';
+
+describe('BrokenRawColorButton', () => {
+  it('renders the button', () => {
+    render(<BrokenRawColorButton>Broken action</BrokenRawColorButton>);
+    expect(screen.getByRole('button', { name: 'Broken action' })).toBeEnabled();
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+The native button has an accessible name.
+</notes>
+
+<notes type="token">
+This artifact intentionally uses raw color values so the token gate fails.
+</notes>
+`;
+
 const DEFAULT: AgentScript = {
   reply:
     '요청을 DS 자동화 작업으로 분해했습니다.\n\n' +
@@ -206,6 +260,12 @@ const ERROR: AgentScript = {
 
 export function selectScript(input: string, mode: AgentMode = 'component'): AgentScript {
   const text = input.toLowerCase();
+  if (/broken|raw|깨진/.test(text)) {
+    return {
+      reply: '의도적으로 깨진 raw color artifact 를 생성했습니다. Tests 탭에서 실패 게이트를 확인하세요.',
+      draft: BROKEN_ARTIFACT,
+    };
+  }
   if (/에러|error|실패/.test(text)) return ERROR;
   if (mode === 'token-sync' || /figma|token|variable/.test(text)) {
     return {
