@@ -41,7 +41,7 @@ test.describe('templates-deterministic', () => {
     await expect(page.getByRole('tab', { name: 'Test', exact: true })).toBeVisible();
 
     // Approve button disabled until validation passes
-    await expect(page.getByRole('button', { name: 'Approve current artifact' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
 
     expect(chatCalls).toBe(0);
   });

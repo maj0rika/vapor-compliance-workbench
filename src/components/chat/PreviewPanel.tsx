@@ -46,6 +46,8 @@ export type PreviewPanelProps = {
     validationResult: RemoteValidationResult;
     failedGates: Array<'typecheck' | 'unit' | 'runtime' | 'axe' | 'token' | 'cleanup'>;
   }) => void;
+  /** 현재 artifactRun 의 로컬 승인 상태 변화를 상위로 전달한다. */
+  onApprovalChange?: (approved: boolean) => void;
   onClose: () => void;
   canClose?: boolean;
 };
@@ -72,6 +74,7 @@ export function PreviewPanel({
   artifactMode,
   onValidationStateChange,
   onRepair,
+  onApprovalChange,
   onClose,
   canClose = true,
 }: PreviewPanelProps) {
@@ -227,10 +230,14 @@ export function PreviewPanel({
               size="sm"
               variant="outline"
               colorPalette="success"
+              aria-label="현재 artifact 로컬 승인"
               disabled={!canApprove}
-              onClick={() => setApproved(true)}
+              onClick={() => {
+                setApproved(true);
+                onApprovalChange?.(true);
+              }}
             >
-              Approve current artifact
+              로컬 승인
             </Button>
           )}
           {canClose && (
@@ -329,10 +336,10 @@ export function PreviewPanel({
       {approved && (
         <div className="grid gap-1 border-b border-v-normal px-v-200 py-v-150">
           <Badge size="md" colorPalette="success">
-            Artifact marked reviewed
+            로컬 리뷰 승인 완료
           </Badge>
           <Text typography="body4" foreground="hint-200">
-            Local review state only. Does not write files.
+            로컬 리뷰 승인만 기록되었습니다. 저장소 변경이나 PR은 생성되지 않습니다.
           </Text>
         </div>
       )}
@@ -394,7 +401,7 @@ export function PreviewPanel({
               </div>
             </div>
             <div className="flex flex-wrap gap-1">
-              {['Run validation', 'Fix with Agent', 'Approve current artifact'].map((label) => (
+              {['Run validation', 'Fix with Agent', '로컬 승인'].map((label) => (
                 <Button key={label} size="sm" variant="outline" disabled>
                   {label}
                 </Button>

@@ -286,13 +286,13 @@ describe('PreviewPanel', () => {
     );
     expect(screen.getByText('Same validation runner')).toBeInTheDocument();
     expect(screen.getByText('Validation: waiting for runner output')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Approve current artifact' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
   });
 
   it('artifactSource 가 있어도 runner 결과 전에는 승인할 수 없다', () => {
     render(<PreviewPanel draft={ARTIFACT} artifactSource="<artifact />" onClose={vi.fn()} />);
 
-    expect(screen.getByRole('button', { name: 'Approve current artifact' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
   });
 
   it('sample validation 실패 시 waiting notice 대신 runner error 를 보여준다', async () => {
@@ -355,5 +355,103 @@ describe('PreviewPanel', () => {
     expect(screen.queryByLabelText('Canvas runtime: failed')).not.toBeInTheDocument();
 
     vi.useRealTimers();
+  });
+
+  describe('Approve gating (G005)', () => {
+    const PASS_VALIDATION_RESULT = JSON.stringify({
+      status: 'pass',
+      durationMs: 100,
+      details: [
+        { label: 'Typecheck', status: 'pass', message: 'ok' },
+        { label: 'Unit', status: 'pass', message: 'ok' },
+        { label: 'Runtime Render', status: 'pass', message: 'ok' },
+        { label: 'Axe', status: 'pass', message: 'ok' },
+        { label: 'Vapor token usage', status: 'pass', message: 'ok' },
+        { label: 'Cleanup', status: 'pass', message: 'ok' },
+      ],
+    });
+
+    function mockFetchWithValidationPass() {
+      vi.mocked(fetch).mockImplementation(async (input) => {
+        const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+        if (url.includes('/api/deepseek/validate')) {
+          return new Response(PASS_VALIDATION_RESULT, { status: 200 });
+        }
+        // default: preview endpoint returns 200 empty
+        return new Response('', { status: 200 });
+      });
+    }
+
+    it('validation pass 전에는 로컬 승인 버튼이 disabled', () => {
+      render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
+      expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
+    });
+
+    it('validation pass 후 로컬 승인 버튼 enabled', async () => {
+      mockFetchWithValidationPass();
+
+      render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
+      fireEvent.click(screen.getByRole('button', { name: 'Run validation' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeEnabled(),
+      );
+    });
+
+    it('로컬 승인 클릭 시 onApprovalChange(true) 호출', async () => {
+      mockFetchWithValidationPass();
+
+      const onApprovalChange = vi.fn();
+      render(
+        <PreviewPanel
+          draft={ARTIFACT}
+          artifactSource={ARTIFACT_SOURCE}
+          onApprovalChange={onApprovalChange}
+          onClose={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Run validation' }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeEnabled(),
+      );
+
+      fireEvent.click(screen.getByRole('button', { name: '현재 artifact 로컬 승인' }));
+      expect(onApprovalChange).toHaveBeenCalledWith(true);
+      await screen.findByText('로컬 리뷰 승인 완료');
+      await screen.findByText('로컬 리뷰 승인만 기록되었습니다. 저장소 변경이나 PR은 생성되지 않습니다.');
+    });
+
+    it('새 artifactSource 로 remount 되면 승인 상태가 초기화된다', async () => {
+      mockFetchWithValidationPass();
+
+      const { rerender } = render(
+        <PreviewPanel
+          key="run-1"
+          draft={ARTIFACT}
+          artifactSource={ARTIFACT_SOURCE}
+          onClose={vi.fn()}
+        />,
+      );
+      fireEvent.click(screen.getByRole('button', { name: 'Run validation' }));
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeEnabled(),
+      );
+      fireEvent.click(screen.getByRole('button', { name: '현재 artifact 로컬 승인' }));
+      await screen.findByText('로컬 리뷰 승인 완료');
+
+      // 새 artifactRun — key 변경으로 remount
+      rerender(
+        <PreviewPanel
+          key="run-2"
+          draft={ARTIFACT}
+          artifactSource={ARTIFACT_SOURCE + ' v2'}
+          onClose={vi.fn()}
+        />,
+      );
+
+      expect(screen.queryByText('로컬 리뷰 승인 완료')).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
+    });
   });
 });

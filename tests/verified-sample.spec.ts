@@ -24,7 +24,7 @@ test.describe('verified sample run', () => {
     await expect(page.getByText('Same validation runner')).toBeVisible();
     await expect(page.locator('[aria-label="Validation: waiting"]')).toBeVisible();
     await expect(page.getByText('Validation: waiting for runner output')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Approve current artifact' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
     expect(chatCalls).toBe(0);
     expect(validationCalls).toBe(0);
 
@@ -65,7 +65,7 @@ test.describe('verified sample run', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Cleanup: PASS$/ }),
     ).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Approve current artifact' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeEnabled();
     expect(chatCalls).toBe(0);
   });
 });
