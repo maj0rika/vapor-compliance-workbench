@@ -22,7 +22,7 @@ test.describe('templates-deterministic', () => {
     await page.getByRole('button', { name: 'Primary Button' }).click();
 
     // Provenance badge must show immediately
-    await expect(page.getByText('Deterministic fixture')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
     await expect(page.getByText('No DeepSeek call')).toBeVisible();
 
     // Workspace visible with Canvas selected by default
@@ -56,7 +56,7 @@ test.describe('templates-deterministic', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'Token Sync' }).click();
 
-    await expect(page.getByText('Deterministic fixture')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
 
     // No Canvas tab and no iframe for token-sync mode
     await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveCount(0);
@@ -78,9 +78,9 @@ test.describe('templates-deterministic', () => {
     });
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Story / Test' }).click();
+    await page.getByRole('button', { name: 'Story/Test' }).click();
 
-    await expect(page.getByText('Deterministic fixture')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();
@@ -105,7 +105,7 @@ test.describe('templates-deterministic', () => {
     await page.goto('/');
     await page.getByRole('button', { name: 'A11y Fix' }).click();
 
-    await expect(page.getByText('Deterministic fixture')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();

@@ -129,6 +129,8 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
         text: '',
         status: 'streaming',
         createdAt: now,
+        // workspace contract(특히 token-sync 분기)는 request.mode 에 의존한다.
+        request,
       };
 
       setMessages((prev) => [...prev, userMessage, assistantMessage]);
@@ -161,6 +163,8 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
       draft: sample.draft,
       artifactSource: sample.artifactSource,
       artifactProvenance: sample.artifactProvenance,
+      // workspace contract(특히 token-sync 분기)는 request.mode 에 의존한다.
+      request: sample.request,
     };
 
     setIsStreaming(false);

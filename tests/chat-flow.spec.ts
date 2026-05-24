@@ -22,7 +22,7 @@ test.describe('Vapor DS automation flow', () => {
     await page.getByRole('button', { name: 'Primary Button' }).click();
 
     // Template click loads the deterministic fixture — no live DeepSeek call.
-    await expect(page.getByText('Deterministic fixture')).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
   });
 
