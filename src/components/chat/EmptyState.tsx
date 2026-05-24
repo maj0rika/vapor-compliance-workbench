@@ -1,30 +1,50 @@
 import { Button, Text } from '@vapor-ui/core';
 import { AiSmartieOutlineIcon } from '@vapor-ui/icons';
+import type { TemplateKey } from '../../agent';
 
-const TEMPLATES = [
+type TemplateItem = {
+  label: string;
+  prompt: string;
+  output: string;
+  gates: string;
+  templateKey: TemplateKey;
+};
+
+const TEMPLATES: TemplateItem[] = [
   {
     label: 'Primary Button',
     prompt: 'primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수',
     output: 'PrimaryActionButton.tsx · story · Vitest · Axe',
     gates: 'Typecheck, Unit, Runtime, Axe, Token',
+    templateKey: 'primary-button',
   },
   {
     label: 'Data Table',
     prompt: '정렬 가능한 DataTable 컴포넌트와 Storybook story, Vitest 테스트 작성',
     output: 'DataTable.tsx · sortable story · row-state tests',
     gates: 'Loading, empty, error, keyboard states',
+    templateKey: 'data-table',
   },
   {
     label: 'Token Sync',
     prompt: 'Figma Variables JSON을 Vapor CSS token 매핑으로 변환하는 유틸 작성',
     output: 'token map utility · mapping story · unit tests',
     gates: 'Raw color, spacing, radius checks',
+    templateKey: 'token-sync',
   },
   {
     label: 'A11y Fix',
     prompt: 'IconButton 접근성 결함을 Axe 기준으로 찾고 수정 코드와 테스트 작성',
     output: 'accessible TSX patch · axe-focused tests',
     gates: 'Role, name, keyboard, disabled states',
+    templateKey: 'a11y-fix',
+  },
+  {
+    label: 'Story/Test',
+    prompt: '기존 컴포넌트에 대한 Storybook story와 Vitest 테스트 생성',
+    output: 'story · Vitest · coverage',
+    gates: 'Unit, Story render, A11y',
+    templateKey: 'story-test',
   },
 ];
 
@@ -37,8 +57,8 @@ const WORKFLOW_STEPS = [
 ];
 
 export type EmptyStateProps = {
-  /** 템플릿 선택 시 호출 — 선택한 문구를 입력창에 채운다. */
-  onPick: (suggestion: string) => void;
+  /** 템플릿 선택 시 호출 — templateKey 로 deterministic fixture 를 로드한다. */
+  onPick: (templateKey: TemplateKey) => void;
   /** deterministic sample 을 모델 호출 없이 workbench 에 로드한다. */
   onRunVerifiedSample: () => void;
 };
@@ -101,7 +121,7 @@ export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
                   key={template.label}
                   size="md"
                   variant="outline"
-                  onClick={() => onPick(template.prompt)}
+                  onClick={() => onPick(template.templateKey)}
                 >
                   <span className="flex min-w-0 flex-col items-start gap-1 text-left">
                     <span>{template.label}</span>

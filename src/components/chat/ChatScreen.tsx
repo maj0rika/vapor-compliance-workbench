@@ -4,7 +4,9 @@ import {
   DeepSeekAgentClient,
   MockAgentClient,
   createVerifiedSampleRun,
+  createTemplateSampleRun,
   type AgentClient,
+  type TemplateKey,
 } from '../../agent';
 import { PromptBar, type PromptModeOption } from '../prompt';
 import { ConversationView } from './ConversationView';
@@ -61,9 +63,6 @@ export function ChatScreen({
   }>({ state: 'idle' });
   const splitRef = useRef<HTMLDivElement>(null);
 
-  // 작업 템플릿으로 입력창을 채우기 위한 seed. key 와 함께 PromptBar 를 remount 한다.
-  const [seed, setSeed] = useState(0);
-  const [seedText, setSeedText] = useState('');
 
   useEffect(() => {
     if (!isStreaming) return;
@@ -106,6 +105,7 @@ export function ChatScreen({
   const latestDraft = draftMessage?.draft ?? '';
   const latestArtifactSource = draftMessage?.artifactSource;
   const latestArtifactProvenance = draftMessage?.artifactProvenance;
+  const latestArtifactMode = draftMessage?.request?.mode;
   const draftId = draftMessage?.id;
   const artifactRunId = draftMessage
     ? `${draftMessage.id}:${draftMessage.createdAt}`
@@ -124,9 +124,10 @@ export function ChatScreen({
     validationState: currentValidationPipeline,
   });
 
-  const handlePickSuggestion = (suggestion: string) => {
-    setSeedText(suggestion);
-    setSeed((value) => value + 1);
+  const handlePickSuggestion = (templateKey: TemplateKey) => {
+    setClosedDraftId(undefined);
+    setValidationPipeline({ state: 'idle' });
+    loadSampleRun(createTemplateSampleRun(templateKey));
   };
 
   const handleRunVerifiedSample = () => {
@@ -206,6 +207,7 @@ export function ChatScreen({
                 draft={latestDraft}
                 artifactSource={latestArtifactSource}
                 artifactProvenance={latestArtifactProvenance}
+                artifactMode={latestArtifactMode}
                 onValidationStateChange={(state) =>
                   setValidationPipeline({ artifactRunId, state })
                 }
@@ -233,9 +235,7 @@ export function ChatScreen({
       {/* 입력 영역 */}
       <div className="border-t border-v-normal p-v-300">
         <PromptBar
-          key={seed}
           bare
-          defaultText={seedText}
           modeOptions={modeOptions}
           accept={acceptedFileTypes}
           maxFileSize={maxFileSize}

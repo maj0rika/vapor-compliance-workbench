@@ -3,6 +3,7 @@ import { validateGeneratedArtifact } from './validateGeneratedArtifact.ts';
 
 type ValidationProxyRequest = {
   markdown?: unknown;
+  mode?: unknown;
 };
 
 export async function handleGeneratedValidation(
@@ -26,8 +27,10 @@ export async function handleGeneratedValidation(
     return;
   }
 
+  const mode = extractMode(parsed.value);
+
   try {
-    const result = await validateGeneratedArtifact(markdown.value);
+    const result = await validateGeneratedArtifact(markdown.value, mode);
     sendJson(res, 200, result);
   } catch (error) {
     sendJson(res, 500, {
@@ -68,6 +71,12 @@ function normalizeMarkdown(
     return { ok: false, error: 'Artifact markdown is required.' };
   }
   return { ok: true, value: request.markdown };
+}
+
+function extractMode(value: unknown): string | undefined {
+  const request = value as ValidationProxyRequest;
+  if (typeof request.mode === 'string') return request.mode;
+  return undefined;
 }
 
 function sendJson(res: ServerResponse, status: number, payload: object) {

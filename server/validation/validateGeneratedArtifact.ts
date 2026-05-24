@@ -8,7 +8,9 @@ import { writeGeneratedFiles } from './writeGeneratedFiles.ts';
 
 export async function validateGeneratedArtifact(
   markdown: string,
+  mode?: string,
 ): Promise<GeneratedValidationResult> {
+  const isTokenSync = mode === 'token-sync';
   const startedAt = performance.now();
   const details: ValidationDetail[] = [];
   const artifact = parseGeneratedArtifact(markdown);
@@ -83,39 +85,52 @@ export async function validateGeneratedArtifact(
       output: unit.output,
     });
 
-    const runtimeRender = await runCommand(
-      join(workspace.path, 'node_modules/.bin/vitest'),
-      ['run', '--config', 'vitest.config.ts', join('src', 'GeneratedRuntimeRender.test.tsx')],
-      workspace.path,
-      30_000,
-    );
-    details.push({
-      label: 'Runtime Render',
-      status: runtimeRender.exitCode === 0 ? 'pass' : 'fail',
-      message:
-        runtimeRender.exitCode === 0
-          ? `Generated component mounted without runtime console errors across ${runtimeVariantSummary(artifact)}.`
-          : 'Generated component failed to render or emitted runtime console errors.',
-      durationMs: runtimeRender.durationMs,
-      output: runtimeRender.output,
-    });
+    if (!isTokenSync) {
+      const runtimeRender = await runCommand(
+        join(workspace.path, 'node_modules/.bin/vitest'),
+        ['run', '--config', 'vitest.config.ts', join('src', 'GeneratedRuntimeRender.test.tsx')],
+        workspace.path,
+        30_000,
+      );
+      details.push({
+        label: 'Runtime Render',
+        status: runtimeRender.exitCode === 0 ? 'pass' : 'fail',
+        message:
+          runtimeRender.exitCode === 0
+            ? `Generated component mounted without runtime console errors across ${runtimeVariantSummary(artifact)}.`
+            : 'Generated component failed to render or emitted runtime console errors.',
+        durationMs: runtimeRender.durationMs,
+        output: runtimeRender.output,
+      });
 
-    const axe = await runCommand(
-      join(workspace.path, 'node_modules/.bin/vitest'),
-      ['run', '--config', 'vitest.config.ts', join('src', 'GeneratedRuntimeAxe.test.tsx')],
-      workspace.path,
-      30_000,
-    );
-    details.push({
-      label: 'Axe',
-      status: axe.exitCode === 0 ? 'pass' : 'fail',
-      message:
-        axe.exitCode === 0
-          ? `Generated runtime axe test reported violations 0 across ${runtimeVariantSummary(artifact)}.`
-          : 'Generated runtime axe test failed.',
-      durationMs: axe.durationMs,
-      output: axe.output,
-    });
+      const axe = await runCommand(
+        join(workspace.path, 'node_modules/.bin/vitest'),
+        ['run', '--config', 'vitest.config.ts', join('src', 'GeneratedRuntimeAxe.test.tsx')],
+        workspace.path,
+        30_000,
+      );
+      details.push({
+        label: 'Axe',
+        status: axe.exitCode === 0 ? 'pass' : 'fail',
+        message:
+          axe.exitCode === 0
+            ? `Generated runtime axe test reported violations 0 across ${runtimeVariantSummary(artifact)}.`
+            : 'Generated runtime axe test failed.',
+        durationMs: axe.durationMs,
+        output: axe.output,
+      });
+    } else {
+      details.push({
+        label: 'Runtime Render',
+        status: 'pass',
+        message: 'token-sync 모드에서는 Runtime Render gate를 실행하지 않습니다.',
+      });
+      details.push({
+        label: 'Axe',
+        status: 'pass',
+        message: 'token-sync 모드에서는 Axe gate를 실행하지 않습니다.',
+      });
+    }
   } catch (error) {
     details.push({
       label: 'Validation runner',

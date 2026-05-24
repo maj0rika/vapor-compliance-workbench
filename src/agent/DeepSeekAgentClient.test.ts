@@ -256,6 +256,31 @@ export function LeakedCode() {
     expect(conversationText).not.toContain('export function');
   });
 
+  it('미완성 <artifact 태그 partial 응답이 conversation token 에 노출되지 않는다', async () => {
+    // fenced code block 이 닫히지 않은 partial stream 시뮬레이션
+    const partialContent = '요약입니다.\n\n<artifact type="component" filename="Foo.tsx">\n```tsx\nexport function Foo() {';
+    vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+      new Response(
+        streamFrom([
+          `data: ${JSON.stringify({ choices: [{ delta: { content: partialContent } }] })}\n\n`,
+          'data: [DONE]\n\n',
+        ]),
+        { status: 200 },
+      ),
+    );
+    const client = new DeepSeekAgentClient('/chat', '/validate');
+
+    const events = await collect(client.sendMessage({ text: '버튼 생성' }));
+    const conversationText = events
+      .filter((event) => event.type === 'token')
+      .map((event) => event.value)
+      .join('');
+
+    expect(conversationText).not.toContain('<artifact');
+    expect(conversationText).not.toContain('```tsx');
+    expect(conversationText).not.toContain('export function Foo');
+  });
+
   it('abort 시 done/error 없이 종료한다', async () => {
     const controller = new AbortController();
     vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {

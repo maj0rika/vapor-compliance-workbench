@@ -515,6 +515,104 @@ No token assertion is intended for this fixture.
 </notes>
 `;
 
+const STORY_TEST_ARTIFACT = `<artifact-meta>
+{
+  "componentName": "StoryTestSampleButton",
+  "primaryExport": "StoryTestSampleButton",
+  "defaultProps": { "children": "Sample action" },
+  "variants": [
+    { "name": "Default", "props": { "children": "Sample action" } },
+    { "name": "Disabled", "props": { "children": "Sample action", "disabled": true } }
+  ]
+}
+</artifact-meta>
+
+<artifact type="component" filename="StoryTestSampleButton.tsx">
+\`\`\`tsx
+import { Button } from '@vapor-ui/core';
+
+export type StoryTestSampleButtonProps = {
+  children: string;
+  disabled?: boolean;
+  onClick?: () => void;
+};
+
+export function StoryTestSampleButton({
+  children,
+  disabled = false,
+  onClick,
+}: StoryTestSampleButtonProps) {
+  return (
+    <Button
+      type="button"
+      colorPalette="primary"
+      disabled={disabled}
+      onClick={onClick}
+    >
+      {children}
+    </Button>
+  );
+}
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="StoryTestSampleButton.stories.tsx">
+\`\`\`tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { StoryTestSampleButton } from './StoryTestSampleButton';
+
+const meta = {
+  title: 'Vapor Automation/StoryTestSampleButton',
+  component: StoryTestSampleButton,
+  args: { children: 'Sample action' },
+} satisfies Meta<typeof StoryTestSampleButton>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const Default: Story = {};
+export const Disabled: Story = { args: { disabled: true } };
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="StoryTestSampleButton.test.tsx">
+\`\`\`tsx
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it, vi } from 'vitest';
+import { StoryTestSampleButton } from './StoryTestSampleButton';
+
+describe('StoryTestSampleButton', () => {
+  it('활성 상태에서 onClick 을 호출한다', async () => {
+    const onClick = vi.fn();
+    render(<StoryTestSampleButton onClick={onClick}>Sample action</StoryTestSampleButton>);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sample action' }));
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('disabled 상태에서는 클릭해도 onClick 을 호출하지 않는다', async () => {
+    const onClick = vi.fn();
+    render(<StoryTestSampleButton disabled onClick={onClick}>Sample action</StoryTestSampleButton>);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Sample action' }));
+
+    expect(onClick).not.toHaveBeenCalled();
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+Accessible name is provided by children. Disabled state is delegated to Vapor Button.
+</notes>
+
+<notes type="token">
+Uses @vapor-ui/core Button and colorPalette instead of raw color values.
+</notes>
+`;
+
 const DEFAULT: AgentScript = {
   reply:
     '요청을 DS 자동화 작업으로 분해했습니다.\n\n' +
@@ -529,6 +627,23 @@ const ERROR: AgentScript = {
   reply: '생성 파이프라인을 실행하는 중에',
   error: '컴포넌트 자동화 요청 처리에 실패했습니다. 입력 파일과 mode 를 확인해 주세요.',
 };
+
+export type TemplateKey = 'primary-button' | 'data-table' | 'token-sync' | 'a11y-fix' | 'story-test';
+
+export function selectScriptByTemplateKey(key: TemplateKey): AgentScript {
+  switch (key) {
+    case 'primary-button':
+      return { reply: 'Primary Button deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: COMPONENT_ARTIFACT };
+    case 'data-table':
+      return { reply: 'Data Table deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: COMPONENT_ARTIFACT };
+    case 'token-sync':
+      return { reply: 'Token Sync deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: TOKEN_ARTIFACT };
+    case 'a11y-fix':
+      return { reply: 'A11y Fix deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: A11Y_ARTIFACT };
+    case 'story-test':
+      return { reply: 'Story/Test deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: STORY_TEST_ARTIFACT };
+  }
+}
 
 export function selectScript(input: string, mode: AgentMode = 'component'): AgentScript {
   const text = input.toLowerCase();

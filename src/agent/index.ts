@@ -9,7 +9,8 @@
 export type { AgentClient } from './AgentClient';
 export { DeepSeekAgentClient, parseDeepSeekSseFrame } from './DeepSeekAgentClient';
 export { MockAgentClient } from './MockAgentClient';
-export { createVerifiedSampleRun } from './verifiedSample';
+export { createVerifiedSampleRun, createTemplateSampleRun } from './verifiedSample';
+export type { TemplateKey } from './scripts';
 export { parseGeneratedArtifact } from './responseParser';
 export { messageReducer, isTerminal } from './messageMachine';
 export type {
@@ -24,6 +25,7 @@ export type {
 export type { MachineEvent } from './messageMachine';
 export type {
   AgentEvent,
+  AgentMode,
   AgentRequest,
   ArtifactProvenance,
   ChatMessage,

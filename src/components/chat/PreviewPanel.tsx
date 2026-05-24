@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Badge, Button, IconButton, Text } from '@vapor-ui/core';
 import { CloseOutlineIcon, CopyOutlineIcon } from '@vapor-ui/icons';
-import { parseGeneratedArtifact, type ArtifactProvenance, type GeneratedArtifact } from '../../agent';
+import { parseGeneratedArtifact, type AgentMode, type ArtifactProvenance, type GeneratedArtifact } from '../../agent';
 import type { MetadataValidationResult } from '../../agent';
 import { Markdown } from './Markdown';
 
@@ -37,6 +37,8 @@ export type PreviewPanelProps = {
   artifactSource?: string;
   /** artifact provenance 를 표시해 sample 과 모델 응답을 구분한다. */
   artifactProvenance?: ArtifactProvenance;
+  /** 현재 agent mode. token-sync 는 Canvas 를 마운트하지 않는다. */
+  artifactMode?: AgentMode;
   /** 실제 validation runner 상태를 상위 pipeline rail 에 반영한다. */
   onValidationStateChange?: (state: ValidationPipelineState) => void;
   onRepair?: (payload: {
@@ -67,11 +69,13 @@ export function PreviewPanel({
   draft,
   artifactSource,
   artifactProvenance,
+  artifactMode,
   onValidationStateChange,
   onRepair,
   onClose,
   canClose = true,
 }: PreviewPanelProps) {
+  const isTokenSync = artifactMode === 'token-sync';
   const sections = useMemo(() => parseArtifactSections(draft), [draft]);
   const parsedArtifact = useMemo(
     () => (artifactSource ? parseGeneratedArtifact(artifactSource) : undefined),
@@ -88,7 +92,7 @@ export function PreviewPanel({
   const [activeTab, setActiveTab] = useState<ArtifactTab>('canvas');
   const [activeVariantName, setActiveVariantName] = useState('Default');
   const [canvasTheme, setCanvasTheme] = useState<CanvasTheme>('light');
-  const canvasSection = canvas
+  const canvasSection = canvas && !isTokenSync
     ? {
         id: 'canvas' as const,
         label: 'Canvas',
@@ -334,7 +338,7 @@ export function PreviewPanel({
       )}
 
       <div className="min-h-0 flex-1 overflow-y-auto p-v-300">
-        {active?.id === 'canvas' && canvas ? (
+        {active?.id === 'canvas' && canvas && !isTokenSync ? (
           <ArtifactCanvas
             model={canvas}
             artifactSource={artifactSource}

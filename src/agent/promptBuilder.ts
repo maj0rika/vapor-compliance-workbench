@@ -60,7 +60,52 @@ export function buildUserContent(request: AgentRequest): string {
     sections.push(buildAttachmentSection(request.attachments));
   }
 
+  if (request.previousArtifactSource !== undefined || request.repairIntent !== undefined) {
+    sections.push(buildRepairSection(request));
+  }
+
   return sections.join('\n\n');
+}
+
+function buildRepairSection(request: AgentRequest): string {
+  const lines: string[] = ['## Repair context'];
+
+  const failedGates = request.repairIntent?.failedGates ?? [];
+  if (failedGates.length > 0) {
+    lines.push(`실패한 gate 목록: ${failedGates.join(', ')}`);
+  }
+
+  const validationResult = request.validationResult as
+    | { details?: Array<{ label: string; status: string; message?: string; output?: string }> }
+    | undefined;
+  if (validationResult?.details) {
+    const failed = validationResult.details.filter((d) => d.status === 'fail');
+    if (failed.length > 0) {
+      lines.push('### 실패 gate 상세');
+      for (const detail of failed) {
+        lines.push(`- ${detail.label}: ${detail.message ?? ''}`);
+        if (detail.output) {
+          const truncated = detail.output.slice(0, 1536);
+          lines.push(`  출력:\n  ${truncated}`);
+        }
+      }
+    }
+  }
+
+  if (request.previousArtifactSource) {
+    const src = request.previousArtifactSource.slice(0, 8192);
+    lines.push('### previousArtifactSource (이전 artifact 원문)');
+    lines.push('```artifact');
+    lines.push(src);
+    lines.push('```');
+  }
+
+  lines.push(
+    '### 수정 지시',
+    '실패한 gate만 수정하고, 전체 artifact를 동일한 delimiter 형식으로 재반환하라. 통과한 gate를 깨지 마라.',
+  );
+
+  return lines.join('\n');
 }
 
 function modeInstruction(mode: AgentMode): string {

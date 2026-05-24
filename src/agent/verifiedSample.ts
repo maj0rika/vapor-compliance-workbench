@@ -1,6 +1,6 @@
 import { artifactToMarkdown, parseGeneratedArtifact } from './responseParser';
-import { selectScript } from './scripts';
-import type { AgentRequest, ArtifactProvenance } from './types';
+import { selectScript, selectScriptByTemplateKey, type TemplateKey } from './scripts';
+import type { AgentMode, AgentRequest, ArtifactProvenance } from './types';
 
 export type VerifiedSampleRun = {
   request: AgentRequest;
@@ -8,6 +8,14 @@ export type VerifiedSampleRun = {
   draft: string;
   artifactSource: string;
   artifactProvenance: ArtifactProvenance;
+};
+
+const TEMPLATE_KEY_MODE: Record<TemplateKey, AgentMode> = {
+  'primary-button': 'component',
+  'data-table': 'component',
+  'token-sync': 'token-sync',
+  'a11y-fix': 'a11y-audit',
+  'story-test': 'story-test',
 };
 
 export function createVerifiedSampleRun(): VerifiedSampleRun {
@@ -25,6 +33,28 @@ export function createVerifiedSampleRun(): VerifiedSampleRun {
     },
     assistantText:
       'Deterministic sample artifact를 로드했습니다. DeepSeek 호출은 하지 않았고, parser, Canvas runtime, validation runner는 실제 생성물과 같은 경로를 사용합니다.',
+    draft: artifactToMarkdown(artifact),
+    artifactSource,
+    artifactProvenance: 'deterministic-sample',
+  };
+}
+
+export function createTemplateSampleRun(templateKey: TemplateKey): VerifiedSampleRun {
+  const script = selectScriptByTemplateKey(templateKey);
+  const artifactSource = script.draft;
+  if (!artifactSource) {
+    throw new Error(`Template fixture for "${templateKey}" is missing.`);
+  }
+
+  const artifact = parseGeneratedArtifact(artifactSource);
+  const mode = TEMPLATE_KEY_MODE[templateKey];
+
+  return {
+    request: {
+      text: `Template fixture: ${templateKey}`,
+      mode,
+    },
+    assistantText: script.reply,
     draft: artifactToMarkdown(artifact),
     artifactSource,
     artifactProvenance: 'deterministic-sample',
