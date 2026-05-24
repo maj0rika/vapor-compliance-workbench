@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { PreviewPanel } from './PreviewPanel';
 
@@ -51,6 +51,14 @@ export function PrimaryButton({ children, disabled = false }: { children: string
 </artifact>`;
 
 describe('PreviewPanel', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 200 })));
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('생성물 워크스페이스와 Canvas 기본 탭을 렌더링한다', () => {
     render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
 
@@ -62,20 +70,39 @@ describe('PreviewPanel', () => {
       'true',
     );
     expect(screen.getByTitle('Generated artifact canvas')).toBeInTheDocument();
+    expect(screen.getByTitle('Generated artifact canvas')).toHaveAttribute(
+      'sandbox',
+      'allow-scripts allow-same-origin',
+    );
+    expect(new URL((screen.getByTitle('Generated artifact canvas') as HTMLIFrameElement).src).origin)
+      .not.toBe(window.location.origin);
     expect(screen.getByText('Metadata contract: PASS')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Disabled variant' })).toBeInTheDocument();
     expect(screen.getByLabelText('Canvas runtime: loading')).toBeInTheDocument();
+  });
+
+  it('metadata primaryExport 가 export const 를 가리켜도 Canvas preview 를 막지 않는다', () => {
+    const constExportSource = ARTIFACT_SOURCE.replaceAll(
+      'function PrimaryButton',
+      'const PrimaryButton = function',
+    );
+
+    render(<PreviewPanel draft={ARTIFACT} artifactSource={constExportSource} onClose={vi.fn()} />);
+
+    expect(screen.getByTitle('Generated artifact canvas')).toBeInTheDocument();
+    expect(screen.getByText('Metadata contract: PASS')).toBeInTheDocument();
   });
 
   it('Canvas runtime ready/error message 를 parent UI 에 반영한다', async () => {
     render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
     const iframe = screen.getByTitle('Generated artifact canvas') as HTMLIFrameElement;
     const previewRunId = new URL(iframe.src).searchParams.get('previewRunId');
+    const previewOrigin = new URL(iframe.src).origin;
 
     fireEvent(
       window,
       new MessageEvent('message', {
-        origin: window.location.origin,
+        origin: previewOrigin,
         source: iframe.contentWindow,
         data: {
           type: 'vapor-preview-ready',
@@ -91,7 +118,7 @@ describe('PreviewPanel', () => {
     fireEvent(
       window,
       new MessageEvent('message', {
-        origin: window.location.origin,
+        origin: previewOrigin,
         source: iframe.contentWindow,
         data: {
           type: 'vapor-preview-error',
@@ -105,6 +132,94 @@ describe('PreviewPanel', () => {
 
     await screen.findByLabelText('Canvas runtime: failed');
     expect(screen.getByText('preview exploded')).toBeInTheDocument();
+  });
+
+  it('preview postMessage 는 origin/source/run id/type/variant/theme mismatch 를 무시한다', async () => {
+    render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
+    const iframe = screen.getByTitle('Generated artifact canvas') as HTMLIFrameElement;
+    const previewRunId = new URL(iframe.src).searchParams.get('previewRunId');
+    const previewOrigin = new URL(iframe.src).origin;
+    const validMessage = {
+      type: 'vapor-preview-ready',
+      previewRunId,
+      variant: 'Default',
+      theme: 'light',
+    };
+
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: window.location.origin,
+        source: iframe.contentWindow,
+        data: validMessage,
+      }),
+    );
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: window,
+        data: validMessage,
+      }),
+    );
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: iframe.contentWindow,
+        data: { ...validMessage, previewRunId: 'wrong-run' },
+      }),
+    );
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: iframe.contentWindow,
+        data: { ...validMessage, type: 'vapor-preview-loaded' },
+      }),
+    );
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: iframe.contentWindow,
+        data: { ...validMessage, variant: 'Disabled' },
+      }),
+    );
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: iframe.contentWindow,
+        data: { ...validMessage, theme: 'dark' },
+      }),
+    );
+
+    expect(screen.getByLabelText('Canvas runtime: loading')).toBeInTheDocument();
+
+    fireEvent(
+      window,
+      new MessageEvent('message', {
+        origin: previewOrigin,
+        source: iframe.contentWindow,
+        data: validMessage,
+      }),
+    );
+
+    await screen.findByLabelText('Canvas runtime: ready');
+  });
+
+  it('preview endpoint 실패를 Canvas failed state 로 표시한다', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(new Response('Component artifact is required', {
+      status: 422,
+    }));
+
+    render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
+
+    await screen.findByLabelText('Canvas runtime: failed');
+    expect(
+      screen.getByText('Preview endpoint failed (422): Component artifact is required'),
+    ).toBeInTheDocument();
   });
 
   it('artifact-meta 가 없으면 휴리스틱 props 사용을 명시한다', () => {

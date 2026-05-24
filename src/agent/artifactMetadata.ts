@@ -115,6 +115,9 @@ function validateRawPropsShapes(rawObject: Record<string, unknown>, errors: stri
       errors.push(`variant at index ${index} must be a plain object.`);
       return;
     }
+    if (typeof variant.name !== 'string' || !variant.name.trim()) {
+      errors.push(`variant at index ${index} name must be a non-empty string.`);
+    }
     if ('props' in variant && !isPlainObject(variant.props)) {
       errors.push(`variant at index ${index} props must be a plain object.`);
     }

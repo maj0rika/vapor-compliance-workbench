@@ -29,10 +29,11 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.locator('[aria-label="Canvas runtime: ready"]')).toBeVisible();
 
     const canvas = page.frameLocator('iframe[title="Generated artifact canvas"]');
-    await expect(page.locator('iframe[title="Generated artifact canvas"]')).toHaveAttribute(
-      'src',
-      /\/api\/deepseek\/preview/,
-    );
+    const canvasFrame = page.locator('iframe[title="Generated artifact canvas"]');
+    await expect(canvasFrame).toHaveAttribute('src', /\/api\/deepseek\/preview/);
+    await expect(canvasFrame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
+    const canvasSrc = await canvasFrame.getAttribute('src');
+    expect(new URL(canvasSrc ?? '', page.url()).origin).not.toBe(new URL(page.url()).origin);
     await expect(
       canvas.getByRole('button', { name: 'Deploy component' }),
     ).toBeVisible();
@@ -90,6 +91,11 @@ test.describe('artifact canvas runtime', () => {
       page
         .getByRole('listitem')
         .filter({ hasText: /Runtime Render: PASS.*2 metadata variants \(Default, Disabled\)/ }),
+    ).toBeVisible();
+    await expect(
+      page
+        .getByRole('listitem')
+        .filter({ hasText: /Axe: PASS.*2 metadata variants \(Default, Disabled\)/ }),
     ).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Cleanup: PASS$/ }),

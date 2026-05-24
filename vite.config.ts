@@ -43,6 +43,7 @@ export default defineConfig(({ mode }) => {
       deepSeekProxyPlugin(env.DEEPSEEK_API_KEY || process.env.DEEPSEEK_API_KEY),
     ],
     server: {
+      host: '0.0.0.0',
       fs: {
         allow: [process.cwd(), tmpdir()],
       },

@@ -84,9 +84,10 @@ export 와 정확히 일치해야 하며, strict lookup 이 실패해도 `Object
 성공처럼 보이지 않습니다. metadata 가 없을 때만 화면에 heuristic preview warning 을
 표시합니다. Preview iframe 은 `ready/error` lifecycle 을 parent UI 로 보내며, runtime
 mount 실패는 `Canvas runtime: failed` 로 노출됩니다. Parent 는 preview iframe 의
-`event.source`, same-origin, `previewRunId`, variant/theme, message type 을 모두
-확인한 뒤에만 Canvas lifecycle 신호를 신뢰합니다. Runtime Render 와 Axe generated
-tests 는 metadata variants 전체를 순회합니다.
+`event.source`, isolated preview origin, `previewRunId`, variant/theme, message type 을
+모두 확인한 뒤에만 Canvas lifecycle 신호를 신뢰합니다. Preview 는 parent 와 다른
+loopback host origin 에서 로드되며 parent 는 iframe `contentDocument`를 읽지 않습니다.
+Runtime Render 와 Axe generated tests 는 metadata variants 전체를 순회합니다.
 
 최종 Workbench 기준은 더 엄격합니다. 생성물이 실제 temp workspace 에 파일로
 써지고, TypeScript, Vitest, Axe, Vapor token gate 를 통과하는 것뿐 아니라,

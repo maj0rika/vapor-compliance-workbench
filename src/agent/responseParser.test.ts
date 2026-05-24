@@ -103,6 +103,17 @@ describe('responseParser', () => {
     expect(artifact.metadataValidation?.errors.join(' ')).toContain('Duplicate variant name');
   });
 
+  it('variant name 이 비어 있으면 normalize 로 숨기지 않고 metadata contract fail 로 표시한다', () => {
+    const artifact = parseGeneratedArtifact(
+      RESPONSE.replace('"name": "Disabled"', '"name": ""'),
+    );
+
+    expect(artifact.metadataValidation?.status).toBe('fail');
+    expect(artifact.metadataValidation?.errors.join(' ')).toContain(
+      'name must be a non-empty string',
+    );
+  });
+
   it('dangerous props key 는 metadata contract fail 로 표시한다', () => {
     const artifact = parseGeneratedArtifact(
       RESPONSE.replace(
@@ -125,5 +136,29 @@ describe('responseParser', () => {
 
     expect(artifact.metadataValidation?.status).toBe('fail');
     expect(artifact.metadataValidation?.errors.join(' ')).toContain('plain object');
+  });
+
+  it('metadata size limit 초과는 metadata contract fail 로 표시한다', () => {
+    const artifact = parseGeneratedArtifact(
+      RESPONSE.replace(
+        '"defaultProps": { "children": "Save" }',
+        `"defaultProps": { "children": "${'x'.repeat(9_000)}" }`,
+      ),
+    );
+
+    expect(artifact.metadataValidation?.status).toBe('fail');
+    expect(artifact.metadataValidation?.errors.join(' ')).toContain('size limit');
+  });
+
+  it('깊게 중첩된 props 는 metadata contract warning 으로 표시한다', () => {
+    const artifact = parseGeneratedArtifact(
+      RESPONSE.replace(
+        '"defaultProps": { "children": "Save" }',
+        '"defaultProps": { "children": "Save", "a": { "b": { "c": { "d": { "e": { "f": { "g": true } } } } } } }',
+      ),
+    );
+
+    expect(artifact.metadataValidation?.status).toBe('warn');
+    expect(artifact.metadataValidation?.warnings.join(' ')).toContain('deeply nested');
   });
 });

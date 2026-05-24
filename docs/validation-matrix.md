@@ -19,8 +19,8 @@ levels are defined in [Reality Check](./reality-check.md).
 | Generated Axe runner | implemented | script-verified | runtime `jest-axe` test iterates metadata variants |
 | Live validation endpoint | implemented | user-verifiable | Run validation calls `/api/deepseek/validate` from the workspace |
 | Verified sample run | implemented | user-verifiable | deterministic fixture uses same parser, Canvas runtime, and `/api/deepseek/validate`; no DeepSeek chat call |
-| Generated component Canvas | implemented | user-verifiable | sandbox iframe preview from `/api/deepseek/preview` Vite-transformed TSX entry |
-| Canvas runtime lifecycle | implemented | user-verifiable | iframe posts ready/error messages; parent checks origin/source/previewRunId/variant/theme/type and shows ready/failed |
+| Generated component Canvas | implemented | user-verifiable | sandbox iframe preview from isolated loopback origin `/api/deepseek/preview` Vite-transformed TSX entry |
+| Canvas runtime lifecycle | implemented | user-verifiable | iframe posts ready/error messages; parent checks isolated origin/source/previewRunId/variant/theme/type and shows ready/failed |
 | Variant/theme controls | implemented | user-verifiable | Default/Disabled and Light/Dark controls covered by E2E |
 | Failure states | implemented | user-verifiable | broken raw-color artifact shows FAIL runner details |
 | Repair loop | implemented | user-verifiable | failed gates are sent back through Fix with Agent |

@@ -21,6 +21,7 @@ export async function handleArtifactPreview(
   const variant = url.searchParams.get('variant') ?? 'Default';
   const theme = url.searchParams.get('theme') === 'dark' ? 'dark' : 'light';
   const previewRunId = url.searchParams.get('previewRunId') ?? '';
+  const parentOrigin = url.searchParams.get('parentOrigin') ?? '*';
 
   if (!markdown.trim()) {
     send(res, 400, 'Missing artifact source');
@@ -59,6 +60,7 @@ export async function handleArtifactPreview(
       variant,
       theme,
       previewRunId,
+      parentOrigin,
       previewProps: buildPreviewProps(markdown, artifact, variant),
     }),
     'utf8',
@@ -100,6 +102,7 @@ function previewEntry({
   variant,
   theme,
   previewRunId,
+  parentOrigin,
   previewProps,
 }: {
   componentFilename: string;
@@ -108,6 +111,7 @@ function previewEntry({
   variant: string;
   theme: 'light' | 'dark';
   previewRunId: string;
+  parentOrigin: string;
   previewProps: Record<string, unknown>;
 }): string {
   const importPath = `./${componentFilename.replace(/\.tsx?$/, '')}`;
@@ -124,9 +128,10 @@ function previewEntry({
     `const previewVariant = ${JSON.stringify(variant)};`,
     `const previewTheme = ${JSON.stringify(theme)};`,
     `const previewRunId = ${JSON.stringify(previewRunId)};`,
+    `const parentOrigin = ${JSON.stringify(parentOrigin)};`,
     '',
     'function notifyPreview(type: "vapor-preview-ready" | "vapor-preview-error", message?: string) {',
-    '  window.parent.postMessage({ type, previewRunId, variant: previewVariant, theme: previewTheme, message }, window.location.origin);',
+    '  window.parent.postMessage({ type, previewRunId, variant: previewVariant, theme: previewTheme, message }, parentOrigin);',
     '}',
     '',
     'class PreviewErrorBoundary extends React.Component<',
@@ -219,11 +224,13 @@ function buildPreviewProps(
 function send(res: ServerResponse, status: number, message: string): void {
   res.statusCode = status;
   res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.end(message);
 }
 
 function sendHtml(res: ServerResponse, html: string): void {
   res.statusCode = 200;
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Access-Control-Allow-Origin', '*');
   res.end(html);
 }

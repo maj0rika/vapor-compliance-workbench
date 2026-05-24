@@ -107,8 +107,10 @@ metadata 가 없을 때만 UI에 heuristic fallback warning 을 표시한다.
 
 Preview iframe 은 생성 entry 에서 `vapor-preview-ready` 또는 `vapor-preview-error`
 message 를 parent UI 로 보낸다. 이 신호가 있어야 Canvas 가 단순 iframe 표시가 아니라
-runtime lifecycle 을 가진 preview 로 설명된다. Parent 는 iframe `contentWindow`,
-same-origin, `previewRunId`, variant/theme, message type whitelist 를 모두 확인한다.
+runtime lifecycle 을 가진 preview 로 설명된다. Preview 는 parent 와 다른 loopback host
+origin 에서 로드되고, Parent 는 iframe `contentWindow`, isolated preview origin,
+`previewRunId`, variant/theme, message type whitelist 를 모두 확인한다. Parent 는
+iframe `contentDocument`를 읽지 않으며 endpoint 실패는 parent-side fetch 결과로 표시한다.
 iframe 이 ready/error 를 보내지 않으면 timeout 으로 Canvas failed state 를 표시한다.
 Runtime Render 와 Axe harness 는 metadata variants 전체를 순회한다.
 

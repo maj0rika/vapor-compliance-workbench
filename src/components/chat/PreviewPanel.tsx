@@ -423,9 +423,11 @@ function ArtifactCanvas({
     () => createPreviewRunId(activeVariantName, artifactSource, theme),
     [activeVariantName, artifactSource, theme],
   );
+  const parentOrigin = window.location.origin;
+  const previewOrigin = useMemo(() => createIsolatedPreviewOrigin(parentOrigin), [parentOrigin]);
   const previewSrc =
     artifactSource && model.canRunReactPreview && model.metadataValidation.status !== 'fail'
-      ? `/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}&previewRunId=${encodeURIComponent(previewRunId)}`
+      ? `${previewOrigin}/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}&previewRunId=${encodeURIComponent(previewRunId)}&parentOrigin=${encodeURIComponent(parentOrigin)}`
       : undefined;
   const [previewState, setPreviewState] = useState<{
     src?: string;
@@ -439,9 +441,10 @@ function ArtifactCanvas({
     if (!previewSrc) return;
     let settled = false;
     let timeoutId = 0;
+    const abortController = new AbortController();
 
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
+      if (event.origin !== previewOrigin) return;
       if (event.source !== iframeRef.current?.contentWindow) return;
       if (!isPreviewMessage(event.data)) return;
       if (event.data.previewRunId !== previewRunId) return;
@@ -464,6 +467,31 @@ function ArtifactCanvas({
     };
 
     window.addEventListener('message', handleMessage);
+    void fetch(previewSrc, { signal: abortController.signal })
+      .then(async (response) => {
+        if (response.ok || settled) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        const message = await response.text();
+        setPreviewState({
+          src: previewSrc,
+          status: 'failed',
+          error: `Preview endpoint failed (${response.status}): ${message}`,
+        });
+      })
+      .catch((error: unknown) => {
+        if (settled || abortController.signal.aborted) return;
+        settled = true;
+        window.clearTimeout(timeoutId);
+        setPreviewState({
+          src: previewSrc,
+          status: 'failed',
+          error:
+            error instanceof Error
+              ? `Preview endpoint failed: ${error.message}`
+              : 'Preview endpoint failed.',
+        });
+      });
     timeoutId = window.setTimeout(() => {
       if (settled) return;
       setPreviewState({
@@ -473,24 +501,11 @@ function ArtifactCanvas({
       });
     }, 5_000);
     return () => {
+      abortController.abort();
       window.clearTimeout(timeoutId);
       window.removeEventListener('message', handleMessage);
     };
-  }, [activeVariantName, previewRunId, previewSrc, theme]);
-
-  const handleIframeLoad = () => {
-    if (!previewSrc || previewStatus !== 'loading') return;
-    const iframeDocument = iframeRef.current?.contentDocument;
-    const bodyText = iframeDocument?.body?.innerText.trim();
-    const hasPreviewRoot = Boolean(iframeDocument?.getElementById('root'));
-    if (bodyText && !hasPreviewRoot) {
-      setPreviewState({
-        src: previewSrc,
-        status: 'failed',
-        error: bodyText,
-      });
-    }
-  };
+  }, [activeVariantName, previewOrigin, previewRunId, previewSrc, theme]);
 
   if (!previewSrc) {
     return (
@@ -626,7 +641,6 @@ function ArtifactCanvas({
         title="Generated artifact canvas"
         sandbox="allow-scripts allow-same-origin"
         src={previewSrc}
-        onLoad={handleIframeLoad}
         className="min-h-[180px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
       />
       {previewStatus === 'failed' && previewError && (
@@ -675,10 +689,11 @@ function buildCanvasModel(
       warnings: ['Heuristic props fallback required.'],
       errors: [],
     };
+  const exportNames = extractComponentExportNames(component.content);
   const componentName =
     metadata?.componentName ??
     metadata?.primaryExport ??
-    component.content.match(/export function\s+(\w+)/)?.[1] ??
+    exportNames.values().next().value ??
     'GeneratedComponent';
   const label =
     story?.content.match(/children:\s*['"]([^'"]+)['"]/)?.[1] ??
@@ -688,7 +703,7 @@ function buildCanvasModel(
 
   return {
     componentName,
-    canRunReactPreview: /export function\s+\w+/.test(component.content),
+    canRunReactPreview: exportNames.size > 0,
     hasMetadata: Boolean(metadata),
     metadataValidation,
     variants:
@@ -701,6 +716,36 @@ function buildCanvasModel(
               : []),
           ],
   };
+}
+
+function extractComponentExportNames(source: string): Set<string> {
+  const names = new Set<string>();
+  for (const match of source.matchAll(/export\s+(?:function|const|class)\s+([A-Za-z_$][\w$]*)/g)) {
+    names.add(match[1]);
+  }
+  for (const match of source.matchAll(/export\s*\{\s*([^}]+)\s*\}/g)) {
+    for (const part of match[1].split(',')) {
+      const name = part.trim().split(/\s+as\s+/).pop()?.trim();
+      if (name) names.add(name);
+    }
+  }
+  if (/export\s+default\s+(?:function|class|\()/g.test(source)) {
+    names.add('default');
+  }
+  return names;
+}
+
+function createIsolatedPreviewOrigin(parentOrigin: string): string {
+  const url = new URL(parentOrigin);
+  if (url.hostname === '127.0.0.1') {
+    url.hostname = 'localhost';
+    return url.origin;
+  }
+  if (url.hostname === 'localhost') {
+    url.hostname = '127.0.0.1';
+    return url.origin;
+  }
+  return parentOrigin;
 }
 
 function buildMetadataVariants(
