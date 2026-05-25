@@ -240,8 +240,30 @@ npm test
 npm run build
 npm run test:e2e          # 모든 E2E (smoke 제외, visual regression 포함)
 npm run verify:generated  # temp workspace 실 runner
+npm run verify:metrics    # docs/production-metrics.md 정적 절대 지표 16개
+npm run verify:lighthouse # Lighthouse budget (Perf/A11y/BP/SEO + LCP/CLS)
+npm run verify:ci         # 위 전체 + bundle budget + E2E 를 단일 명령으로
 DEEPSEEK_API_KEY=... npm run smoke:live-deepseek  # 선택, CI hard gate 아님
 ```
+
+## Absolute Production-Readiness Gates
+
+`docs/production-metrics.md` 가 정의하는 8개 평가 축 (Security, Correctness,
+Trust Boundary, UX Coherence, Vapor DS Conformance, Operational Robustness,
+Performance, Accessibility) 의 절대 지표를 모두 자동 측정한다.
+
+`npm run verify:ci` 단일 명령으로 모든 항목을 강제:
+
+| 게이트 그룹 | 명령 | 검증 항목 |
+|------------|------|-----------|
+| 정적 분석 + 단위 | `verify:metrics` | path traversal 차단, token regex, repair UI cap, sandbox 트러스트, theme wiring, tabpanel ARIA, reduced motion 등 16개 |
+| 컴파일 + 런타임 | `typecheck`, `lint`, `test` (273+ unit), `build` | TS strict, ESLint 경계, 단위/통합 |
+| 생성물 검증 | `verify:generated` | 6 gates (typecheck/unit/runtime/axe/token/cleanup) |
+| 번들 + 성능 | `verify:bundle`, `verify:lighthouse` | <200KB gzip, Perf>=90 A11y>=95 BP>=95 LCP<=2.5s CLS<=0.1 |
+| E2E + 다크모드 | `test:e2e` (51+ tests) | generate → validate → repair → approve 전 흐름 + Vapor 다크모드 실측 |
+
+현 상태 (G030 기준): **38 PASS / 0 FAIL / 4 TODO** (cosmetic gap-N 정리 +
+성능 마이크로벤치). 자세한 매트릭스는 [docs/production-metrics.md](docs/production-metrics.md).
 
 ## Documentation
 

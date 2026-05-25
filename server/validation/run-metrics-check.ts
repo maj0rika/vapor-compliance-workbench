@@ -12,7 +12,7 @@
  *   node server/validation/run-metrics-check.ts
  *   npm run verify:metrics
  */
-import { readFile, readdir, stat } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { join, relative, resolve, sep } from 'node:path';
 
 type Verdict = { id: string; label: string; status: 'pass' | 'fail'; detail?: string };
@@ -63,6 +63,20 @@ function fail(id: string, label: string, detail: string): void {
   verdicts.push({ id, label, status: 'fail', detail });
 }
 
+function record(
+  ok: boolean,
+  id: string,
+  label: string,
+  failDetail: string,
+  passDetail?: string,
+): void {
+  if (ok) {
+    pass(id, label, passDetail);
+  } else {
+    fail(id, label, failDetail);
+  }
+}
+
 async function run(): Promise<void> {
   const componentsDir = join(ROOT, 'src', 'components');
   const componentFiles = await readTextRecursive(
@@ -86,9 +100,12 @@ async function run(): Promise<void> {
       }
     }
   }
-  rawHexHits.length === 0
-    ? pass('V01', '도구 자체의 raw hex 0건')
-    : fail('V01', '도구 자체의 raw hex 0건', `${rawHexHits.length}건 발견: ${rawHexHits.slice(0, 5).join(', ')}`);
+  record(
+    rawHexHits.length === 0,
+    'V01',
+    '도구 자체의 raw hex 0건',
+    `${rawHexHits.length}건 발견: ${rawHexHits.slice(0, 5).join(', ')}`,
+  );
 
   // V02: inline style raw px 0건
   const inlinePxHits: string[] = [];
@@ -96,9 +113,12 @@ async function run(): Promise<void> {
     const m = file.content.match(/style=\{[^}]*\b\d+px\b/g);
     if (m && m.length > 0) inlinePxHits.push(`${rel(file.path)} (${m.length}건)`);
   }
-  inlinePxHits.length === 0
-    ? pass('V02', 'inline style raw px 0건')
-    : fail('V02', 'inline style raw px 0건', inlinePxHits.join(', '));
+  record(
+    inlinePxHits.length === 0,
+    'V02',
+    'inline style raw px 0건',
+    inlinePxHits.join(', '),
+  );
 
   // S01: filename sanitize 함수가 parser + writeGen 양쪽에서 호출되는지
   const parserSrc = await readFile(join(ROOT, 'src/agent/responseParser.ts'), 'utf8');
@@ -107,75 +127,111 @@ async function run(): Promise<void> {
     /export function isSafeArtifactFilename/.test(parserSrc) &&
     /isSafeArtifactFilename\(/.test(parserSrc) &&
     /isSafeArtifactFilename\(/.test(writeGenSrc);
-  s01
-    ? pass('S01', 'filename sanitize 함수 export + parser/writeGen 양쪽 호출')
-    : fail('S01', 'filename sanitize', 'isSafeArtifactFilename 호출 누락');
+  record(
+    s01,
+    'S01',
+    'filename sanitize 함수 export + parser/writeGen 양쪽 호출',
+    'isSafeArtifactFilename 호출 누락',
+  );
 
   // T02: validationProxy 의 concurrent guard
   const proxySrc = await readFile(join(ROOT, 'server/validation/validationProxy.ts'), 'utf8');
-  /maxConcurrentRuns/.test(proxySrc) && /\b429\b/.test(proxySrc)
-    ? pass('T02', '동시 validation cap + 429')
-    : fail('T02', '동시 validation cap', 'maxConcurrentRuns/429 누락');
+  record(
+    /maxConcurrentRuns/.test(proxySrc) && /\b429\b/.test(proxySrc),
+    'T02',
+    '동시 validation cap + 429',
+    'maxConcurrentRuns/429 누락',
+  );
 
   // T03: TTL sweep export
   const tempWsSrc = await readFile(join(ROOT, 'server/validation/createTempWorkspace.ts'), 'utf8');
-  /sweepStaleTempWorkspaces/.test(tempWsSrc)
-    ? pass('T03', 'TTL sweep 함수 export')
-    : fail('T03', 'TTL sweep', 'sweepStaleTempWorkspaces 미구현');
+  record(
+    /sweepStaleTempWorkspaces/.test(tempWsSrc),
+    'T03',
+    'TTL sweep 함수 export',
+    'sweepStaleTempWorkspaces 미구현',
+  );
 
   // T04: SIGKILL escalation
   const runCmdSrc = await readFile(join(ROOT, 'server/validation/runCommand.ts'), 'utf8');
-  /SIGKILL/.test(runCmdSrc) && /SIGKILL_ESCALATION_DELAY_MS/.test(runCmdSrc)
-    ? pass('T04', 'SIGTERM → SIGKILL escalation')
-    : fail('T04', 'SIGKILL escalation', 'SIGKILL 누락');
+  record(
+    /SIGKILL/.test(runCmdSrc) && /SIGKILL_ESCALATION_DELAY_MS/.test(runCmdSrc),
+    'T04',
+    'SIGTERM → SIGKILL escalation',
+    'SIGKILL 누락',
+  );
 
   // U01: validation 탭 한국어
   const previewPanelSrc = await readFile(join(ROOT, 'src/components/chat/PreviewPanel.tsx'), 'utf8');
-  /validation:\s*'검증'/.test(previewPanelSrc)
-    ? pass('U01', '검증 탭 한국어 레이블')
-    : fail('U01', 'validation 탭 레이블', "validation: '검증' 누락");
+  record(
+    /validation:\s*'검증'/.test(previewPanelSrc),
+    'U01',
+    '검증 탭 한국어 레이블',
+    "validation: '검증' 누락",
+  );
 
   // U06: repair chain attempts UI
   const chatScreenSrc = await readFile(join(ROOT, 'src/components/chat/ChatScreen.tsx'), 'utf8');
-  /MAX_REPAIR_ATTEMPTS_PER_CHAIN/.test(chatScreenSrc) && /repairChainAttempts/.test(chatScreenSrc)
-    ? pass('U06', 'repair chain attempts UI cap')
-    : fail('U06', 'repair UI cap', 'repairChainAttempts state 누락');
+  record(
+    /MAX_REPAIR_ATTEMPTS_PER_CHAIN/.test(chatScreenSrc) && /repairChainAttempts/.test(chatScreenSrc),
+    'U06',
+    'repair chain attempts UI cap',
+    'repairChainAttempts state 누락',
+  );
 
   // U07: ThemeToggle 가 Vapor useTheme 을 사용
   const themeToggleSrc = await readFile(join(ROOT, 'src/components/chat/ThemeToggle.tsx'), 'utf8');
-  /useTheme/.test(themeToggleSrc) && /setTheme/.test(themeToggleSrc)
-    ? pass('U07', 'ThemeToggle Vapor useTheme 연결')
-    : fail('U07', 'ThemeToggle', 'useTheme 누락');
+  record(
+    /useTheme/.test(themeToggleSrc) && /setTheme/.test(themeToggleSrc),
+    'U07',
+    'ThemeToggle Vapor useTheme 연결',
+    'useTheme 누락',
+  );
 
   // V05: token gate hsl/oklch
   const tokenUsageSrc = await readFile(join(ROOT, 'src/agent/tokenUsage.ts'), 'utf8');
-  /hsl/.test(tokenUsageSrc) && /oklch/.test(tokenUsageSrc) && /NAMED_COLOR_KEYWORDS/.test(tokenUsageSrc)
-    ? pass('V05', 'token regex hsl/oklch/named')
-    : fail('V05', 'token regex', 'hsl/oklch/named 미커버');
+  record(
+    /hsl/.test(tokenUsageSrc) && /oklch/.test(tokenUsageSrc) && /NAMED_COLOR_KEYWORDS/.test(tokenUsageSrc),
+    'V05',
+    'token regex hsl/oklch/named',
+    'hsl/oklch/named 미커버',
+  );
 
   // V06: ESLint config 에 vapor boundary 규칙 존재
   const eslintSrc = await readFile(join(ROOT, 'eslint.config.js'), 'utf8');
-  /no-restricted-imports/.test(eslintSrc) && /@vapor-ui\/core/.test(eslintSrc)
-    ? pass('V06', 'ESLint vapor boundary 강제')
-    : fail('V06', 'ESLint boundary', 'no-restricted-imports rule 누락');
+  record(
+    /no-restricted-imports/.test(eslintSrc) && /@vapor-ui\/core/.test(eslintSrc),
+    'V06',
+    'ESLint vapor boundary 강제',
+    'no-restricted-imports rule 누락',
+  );
 
   // A03: iframe title
-  /iframe[\s\S]{0,200}?title=/.test(previewPanelSrc)
-    ? pass('A03', 'Canvas iframe title')
-    : fail('A03', 'iframe title', '누락');
+  record(
+    /iframe[\s\S]{0,200}?title=/.test(previewPanelSrc),
+    'A03',
+    'Canvas iframe title',
+    '누락',
+  );
 
   // A04: tab/tabpanel ARIA pair
-  /role="tab"[\s\S]*?aria-controls/.test(previewPanelSrc) &&
-  /role: 'tabpanel'/.test(previewPanelSrc) &&
-  /'aria-labelledby'/.test(previewPanelSrc)
-    ? pass('A04', 'tab/tabpanel ARIA 페어')
-    : fail('A04', 'tab/tabpanel', 'aria-controls/role=tabpanel 누락');
+  record(
+    /role="tab"[\s\S]*?aria-controls/.test(previewPanelSrc) &&
+      /role: 'tabpanel'/.test(previewPanelSrc) &&
+      /'aria-labelledby'/.test(previewPanelSrc),
+    'A04',
+    'tab/tabpanel ARIA 페어',
+    'aria-controls/role=tabpanel 누락',
+  );
 
   // A05: prefers-reduced-motion
   const convoSrc = await readFile(join(ROOT, 'src/components/chat/ConversationView.tsx'), 'utf8');
-  /prefers-reduced-motion/.test(convoSrc)
-    ? pass('A05', 'prefers-reduced-motion 대응')
-    : fail('A05', 'reduced motion', '누락');
+  record(
+    /prefers-reduced-motion/.test(convoSrc),
+    'A05',
+    'prefers-reduced-motion 대응',
+    '누락',
+  );
 
   // S03: API key 클라이언트 노출 차단 — src/ 안에 process.env.DEEPSEEK 또는
   // import.meta.env.DEEPSEEK 가 없어야 함
@@ -183,14 +239,20 @@ async function run(): Promise<void> {
   const apiKeyLeaks = allSrc.filter((f) =>
     /(?:process\.env|import\.meta\.env)\.DEEPSEEK_API_KEY/.test(f.content),
   );
-  apiKeyLeaks.length === 0
-    ? pass('S03', 'API key 클라이언트 노출 차단')
-    : fail('S03', 'API key 차단', apiKeyLeaks.map((f) => rel(f.path)).join(', '));
+  record(
+    apiKeyLeaks.length === 0,
+    'S03',
+    'API key 클라이언트 노출 차단',
+    apiKeyLeaks.map((f) => rel(f.path)).join(', '),
+  );
 
   // S04: postMessage origin allowlist
-  /event\.origin\s*!==\s*previewOrigin/.test(previewPanelSrc)
-    ? pass('S04', 'postMessage origin allowlist')
-    : fail('S04', 'origin allowlist', '누락');
+  record(
+    /event\.origin\s*!==\s*previewOrigin/.test(previewPanelSrc),
+    'S04',
+    'postMessage origin allowlist',
+    '누락',
+  );
 
   // Summary
   const passed = verdicts.filter((v) => v.status === 'pass').length;
