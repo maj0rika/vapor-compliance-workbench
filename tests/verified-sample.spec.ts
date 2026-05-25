@@ -50,7 +50,7 @@ test.describe('verified sample run', () => {
     await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Typecheck: PASS$/ }),
     ).toBeVisible();

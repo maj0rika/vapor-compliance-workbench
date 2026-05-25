@@ -55,7 +55,7 @@ test.describe('Vapor DS automation flow', () => {
     ).toBeVisible();
     await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('PrimaryActionButton');
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Typecheck: PASS');
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
@@ -152,7 +152,7 @@ test.describe('Vapor DS automation flow', () => {
     await expect(workspace).toBeVisible({ timeout: 6000 });
     await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('figmaToVaporTokenMap');
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
 
@@ -170,7 +170,7 @@ test.describe('Vapor DS automation flow', () => {
     await expect(workspace).toBeVisible({ timeout: 6000 });
     await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('AccessibleAttachButton');
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Axe: PASS');
   });
 

@@ -70,7 +70,7 @@ const TAB_LABELS: Record<ArtifactTab, string> = {
   component: 'Component',
   story: 'Story',
   test: 'Test',
-  validation: 'Tests',
+  validation: '검증',
 };
 
 /**

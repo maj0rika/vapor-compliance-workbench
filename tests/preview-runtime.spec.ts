@@ -78,7 +78,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
 
     await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible();
     await expect(
@@ -140,7 +140,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
 
     await expect(page.locator('[aria-label="Validation: fail"]')).toBeVisible();
     await expect(
@@ -163,7 +163,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
 
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Typecheck: FAIL$/ }),
@@ -190,7 +190,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
 
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Unit: PASS$/ }),
@@ -222,7 +222,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(page.getByText(/Metadata contract: FAIL/).first()).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Runtime Render: FAIL$/ }),
@@ -246,7 +246,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
 
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Runtime Render: PASS$/ }),
@@ -271,7 +271,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Vapor token usage: FAIL$/ }),
     ).toBeVisible({ timeout: 8000 });
@@ -289,7 +289,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: 20000,
     });
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Vapor token usage: PASS$/ }),
     ).toBeVisible({ timeout: 8000 });

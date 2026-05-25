@@ -141,7 +141,7 @@ test.describe('visual regression', () => {
 
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
     await page.getByRole('button', { name: '검증 실행' }).click();
-    await page.getByRole('tab', { name: 'Tests' }).click();
+    await page.getByRole('tab', { name: '검증' }).click();
     // Wait for validation to settle
     await page.waitForTimeout(3000);
     await expect(page).toHaveScreenshot('runtime-fail-validation-1280.png', snapshotOptions);

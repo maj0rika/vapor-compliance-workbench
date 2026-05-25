@@ -58,7 +58,7 @@ test.describe('Live DeepSeek validation smoke', () => {
     await runValidation.click();
 
     // ValidationPanel 활성 (Tests 탭)
-    const testsTab = page.getByRole('tab', { name: 'Tests' });
+    const testsTab = page.getByRole('tab', { name: '검증' });
     await testsTab.click();
 
     // 전체 상태 badge 노출 (Pass / Fail / Warn) — 어느 결과든 60초 내 settled
