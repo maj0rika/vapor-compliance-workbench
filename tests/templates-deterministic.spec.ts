@@ -62,9 +62,20 @@ test.describe('templates-deterministic', () => {
     await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveCount(0);
     await expect(page.locator('iframe[title="Generated artifact canvas"]')).toHaveCount(0);
 
-    // Component tab (first available) shows the token map identifier
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();
+
+    // G013.1: Token Sync workspace 의 기본 탭은 '토큰 매핑' 이고 TokenSyncPanel
+    // (mapping table + unknown report + generated source) 이 노출된다.
+    await expect(page.getByRole('tab', { name: '토큰 매핑' })).toHaveAttribute(
+      'aria-selected',
+      'true',
+    );
+    await expect(page.getByTestId('token-sync-panel')).toBeVisible();
+    await expect(page.getByTestId('token-sync-mapping-table')).toBeVisible();
+
+    // Component 탭으로 전환하면 생성된 token map utility 코드가 보인다.
+    await page.getByRole('tab', { name: 'Component' }).click();
     await expect(workspace).toContainText('figmaToVaporTokenMap');
 
     expect(chatCalls).toBe(0);

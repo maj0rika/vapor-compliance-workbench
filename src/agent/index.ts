@@ -34,6 +34,7 @@ export type {
   Role,
 } from './types';
 export type { VerifiedSampleRun } from './verifiedSample';
+export { EXAMPLE_FIGMA_VARIABLES } from './tokenMapping';
 export {
   buildTokenMap,
   mapVariable,

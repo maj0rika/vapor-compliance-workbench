@@ -1,13 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge, Button, IconButton, Text } from '@vapor-ui/core';
 import { CloseOutlineIcon, CopyOutlineIcon } from '@vapor-ui/icons';
 import { parseGeneratedArtifact, type AgentMode, type ArtifactProvenance, type GeneratedArtifact } from '../../agent';
 import type { MetadataValidationResult } from '../../agent';
 import { Markdown } from './Markdown';
-import { MetadataPanel } from './MetadataPanel';
+// G013.1/G015: 두 패널 모두 token-sync / metadata 탭이 활성일 때만 필요하므로
+// React.lazy 로 분리해 초기 JS bundle 예산 (200KB gzip) 을 보호한다.
+const MetadataPanel = lazy(() =>
+  import('./MetadataPanel').then((m) => ({ default: m.MetadataPanel })),
+);
+const TokenSyncPanel = lazy(() =>
+  import('./TokenSyncPanel').then((m) => ({ default: m.TokenSyncPanel })),
+);
 import { ValidationPanel, type RemoteValidationResult } from './ValidationPanel';
 
-type ArtifactTab = 'canvas' | 'metadata' | 'component' | 'story' | 'test' | 'validation';
+type ArtifactTab = 'canvas' | 'metadata' | 'token-mapping' | 'component' | 'story' | 'test' | 'validation';
 
 type ArtifactSection = {
   id: ArtifactTab;
@@ -59,6 +66,7 @@ export type ValidationPipelineState = 'idle' | 'running' | 'pass' | 'fail' | 'er
 const TAB_LABELS: Record<ArtifactTab, string> = {
   canvas: 'Canvas',
   metadata: '메타데이터',
+  'token-mapping': '토큰 매핑',
   component: 'Component',
   story: 'Story',
   test: 'Test',
@@ -128,8 +136,13 @@ export function PreviewPanel({
   const metadataSection = parsedArtifact?.metadata
     ? { id: 'metadata' as const, label: TAB_LABELS.metadata, content: '' }
     : undefined;
+  // G013.1: token-sync mode 에서 TokenSyncPanel (Figma → Vapor mapping table) 탭 노출
+  const tokenMappingSection = isTokenSync
+    ? { id: 'token-mapping' as const, label: TAB_LABELS['token-mapping'], content: '' }
+    : undefined;
   const visibleSections = [
     ...(canvasSection ? [canvasSection] : []),
+    ...(tokenMappingSection ? [tokenMappingSection] : []),
     ...(metadataSection ? [metadataSection] : []),
     ...allCodeSections,
   ];
@@ -397,11 +410,17 @@ export function PreviewPanel({
             onThemeChange={setCanvasTheme}
           />
         ) : active?.id === 'metadata' ? (
-          <MetadataPanel
-            metadata={parsedArtifact?.metadata}
-            validation={parsedArtifact?.metadataValidation}
-            activeVariantName={activeVariantName}
-          />
+          <Suspense fallback={<LazyPanelFallback />}>
+            <MetadataPanel
+              metadata={parsedArtifact?.metadata}
+              validation={parsedArtifact?.metadataValidation}
+              activeVariantName={activeVariantName}
+            />
+          </Suspense>
+        ) : active?.id === 'token-mapping' ? (
+          <Suspense fallback={<LazyPanelFallback />}>
+            <TokenSyncPanel />
+          </Suspense>
         ) : active?.id === 'validation' ? (
           <ValidationPanel
             result={validationResult}
@@ -769,6 +788,17 @@ function parseArtifactSections(markdown: string): ArtifactSection[] {
       content: `## ${TAB_LABELS[title]}\n\n${content}`,
     };
   });
+}
+
+/** React.lazy 패널 로딩 중 Suspense placeholder. */
+function LazyPanelFallback() {
+  return (
+    <div className="flex items-center gap-v-150 p-v-200">
+      <Text typography="body4" foreground="hint-200">
+        패널을 불러오는 중...
+      </Text>
+    </div>
+  );
 }
 
 function buildCanvasModel(

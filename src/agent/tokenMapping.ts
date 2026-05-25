@@ -100,6 +100,33 @@ const VAPOR_COLORS: ReadonlyArray<{ hex: string; token: string; role: string }> 
 // Public API
 // ----------------------------------------------------------------------------
 
+/**
+ * G013.1 demo fixture — `parseFigmaVariables` 로 통과 가능한 Figma Variables
+ * export 형식 예제. TokenSyncPanel 기본 입력으로 사용된다. 외부 fixture 파일
+ * 대신 모듈 상수로 노출해 agent 배럴을 통한 import 만 허용하는 ESLint
+ * `no-restricted-imports` 규칙과 일치한다.
+ */
+export const EXAMPLE_FIGMA_VARIABLES = {
+  variables: [
+    { name: 'brand/primary/base', type: 'COLOR', value: '#3B82F6', collection: 'Brand/Color' },
+    { name: 'brand/primary/strong', type: 'COLOR', value: '#2563EB', collection: 'Brand/Color' },
+    { name: 'surface/canvas/light', type: 'COLOR', value: '#FFFFFF', collection: 'Surface' },
+    { name: 'surface/canvas/subtle', type: 'COLOR', value: '#F5F7FA', collection: 'Surface' },
+    { name: 'state/danger/base', type: 'COLOR', value: '#EF4444', collection: 'State' },
+    { name: 'state/success/base', type: 'COLOR', value: '#10B981', collection: 'State' },
+    { name: 'spacing/xs', type: 'FLOAT', value: 4, collection: 'Spacing' },
+    { name: 'spacing/sm', type: 'FLOAT', value: 8, collection: 'Spacing' },
+    { name: 'spacing/md', type: 'FLOAT', value: 16, collection: 'Spacing' },
+    { name: 'spacing/lg', type: 'FLOAT', value: 24, collection: 'Spacing' },
+    { name: 'spacing/xl', type: 'FLOAT', value: 32, collection: 'Spacing' },
+    { name: 'corner/radius/sm', type: 'FLOAT', value: 4, collection: 'Radius' },
+    { name: 'corner/radius/md', type: 'FLOAT', value: 8, collection: 'Radius' },
+    { name: 'corner/radius/lg', type: 'FLOAT', value: 12, collection: 'Radius' },
+    { name: 'typography/heading/h1', type: 'STRING', value: 'Pretendard Bold 32', collection: 'Typography' },
+    { name: 'shadow/depth/2', type: 'STRING', value: '0 2px 8px rgba(0,0,0,0.08)', collection: 'Effect' },
+  ],
+} as const;
+
 /** Figma Variables export JSON 의 'variables' 배열을 받아 평탄화한다. */
 export function parseFigmaVariables(json: unknown): FigmaVariable[] {
   if (!json || typeof json !== 'object') return [];

@@ -51,3 +51,4 @@ chat-log*.md
 # Local drafts
 drafts/
 notes.local.md
+.serena/
