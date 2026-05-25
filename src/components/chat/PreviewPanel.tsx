@@ -4,9 +4,10 @@ import { CloseOutlineIcon, CopyOutlineIcon } from '@vapor-ui/icons';
 import { parseGeneratedArtifact, type AgentMode, type ArtifactProvenance, type GeneratedArtifact } from '../../agent';
 import type { MetadataValidationResult } from '../../agent';
 import { Markdown } from './Markdown';
+import { MetadataPanel } from './MetadataPanel';
 import { ValidationPanel, type RemoteValidationResult } from './ValidationPanel';
 
-type ArtifactTab = 'canvas' | 'component' | 'story' | 'test' | 'validation';
+type ArtifactTab = 'canvas' | 'metadata' | 'component' | 'story' | 'test' | 'validation';
 
 type ArtifactSection = {
   id: ArtifactTab;
@@ -57,6 +58,7 @@ export type ValidationPipelineState = 'idle' | 'running' | 'pass' | 'fail' | 'er
 
 const TAB_LABELS: Record<ArtifactTab, string> = {
   canvas: 'Canvas',
+  metadata: '메타데이터',
   component: 'Component',
   story: 'Story',
   test: 'Test',
@@ -122,7 +124,15 @@ export function PreviewPanel({
   const allCodeSections = validationTabSection
     ? [...codeSections, validationTabSection]
     : codeSections;
-  const visibleSections = canvasSection ? [canvasSection, ...allCodeSections] : allCodeSections;
+  // G015: artifact-meta 가 있으면 read-only 메타데이터 탭 노출
+  const metadataSection = parsedArtifact?.metadata
+    ? { id: 'metadata' as const, label: TAB_LABELS.metadata, content: '' }
+    : undefined;
+  const visibleSections = [
+    ...(canvasSection ? [canvasSection] : []),
+    ...(metadataSection ? [metadataSection] : []),
+    ...allCodeSections,
+  ];
   const active = visibleSections.find((section) => section.id === activeTab) ?? visibleSections[0];
 
   const handleCopy = () => {
@@ -385,6 +395,12 @@ export function PreviewPanel({
             onVariantChange={setActiveVariantName}
             theme={canvasTheme}
             onThemeChange={setCanvasTheme}
+          />
+        ) : active?.id === 'metadata' ? (
+          <MetadataPanel
+            metadata={parsedArtifact?.metadata}
+            validation={parsedArtifact?.metadataValidation}
+            activeVariantName={activeVariantName}
           />
         ) : active?.id === 'validation' ? (
           <ValidationPanel
