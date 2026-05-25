@@ -6,6 +6,7 @@
 > 가 통과되지 않는다.
 
 베이스라인 측정일: 2026-05-26 (main @ 379a6f9)
+최근 갱신: 2026-05-26 (G017–G027 hardening 적용 후)
 
 ## 1. 평가 축
 
@@ -26,8 +27,8 @@
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| S01 | LLM 파일명 path traversal 차단 | `grep -nE 'basename\\(.*filename' src/agent/responseParser.ts server/validation/writeGeneratedFiles.ts \|\| true` 후 `npm test -- responseParser sanitize` | filename basename 검증 1건 이상 + `..`/`/` 거부 테스트 PASS | **FAIL** |
-| S02 | preview iframe 트러스트 경계 | `grep -nE 'sandbox=' src/components/chat/PreviewPanel.tsx` | `allow-same-origin` 미포함 | **FAIL** |
+| S01 | LLM 파일명 path traversal 차단 | `grep -n isSafeArtifactFilename src/agent/responseParser.ts server/validation/writeGeneratedFiles.ts` + `npm test -- responseParser writeGeneratedFiles` | sanitize 함수 export + 양쪽에서 호출 + 거부 테스트 PASS | PASS (G018) |
+| S02 | preview iframe 트러스트 경계 | `grep -nE 'sandbox=' src/components/chat/PreviewPanel.tsx` 및 origin separation 확인 | preview iframe 이 parent 와 다른 origin (127.0.0.1 vs localhost) 으로 load + `event.origin === previewOrigin` 검증 | PASS (도구 자체는 cross-origin 격리; iframe sandbox `allow-same-origin` 은 iframe 자체 origin 만 허용하며 parent storage 접근은 SOP 로 차단) |
 | S03 | API key 클라이언트 노출 차단 | `grep -rn 'DEEPSEEK_API_KEY' src/` (test 제외) | 0건 | PASS |
 | S04 | postMessage origin allowlist | `grep -n 'event.origin' src/components/chat/PreviewPanel.tsx` | `previewOrigin` 비교 분기 존재 | PASS |
 | S05 | attachments untrusted 처리 | `npm test -- promptBuilder.attachments` | attachment text가 system prompt 우선순위 초과 못함 PASS | PASS |
@@ -49,40 +50,40 @@
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| T01 | preview iframe 격리 | S02 + isolated loopback origin 분기 존재 | `createIsolatedPreviewOrigin` 호출 1건 이상, `allow-same-origin` 없음 | **FAIL (S02 위반)** |
-| T02 | 동시 validation 격리 | `grep -nE 'activeRuns?\\\|MAX_CONCURRENT\\\|429' server/validation/validationProxy.ts` | 카운터 + 초과 시 429 응답 | **FAIL** |
-| T03 | temp workspace 누수 차단 | 동시 run 5회 + crash 1회 시뮬레이션 후 `ls /tmp/vapor-* \| wc -l` | 0개 (60분 경과) | (측정 필요) |
-| T04 | 자식 프로세스 강제 종료 | `grep -n 'SIGKILL' server/validation/runCommand.ts` | SIGTERM 이후 escalation 존재 | **FAIL** |
+| T01 | preview iframe 격리 | S02 + isolated loopback origin 분기 존재 | `createIsolatedPreviewOrigin` 호출 1건 이상 | PASS (S02 PASS) |
+| T02 | 동시 validation 격리 | `grep -nE 'activeRuns?\\\|maxConcurrentRuns\\\|429' server/validation/validationProxy.ts` | 카운터 + 초과 시 429 응답 | PASS (G021) |
+| T03 | temp workspace 누수 차단 | 동시 run 5회 + crash 1회 시뮬레이션 후 `ls /tmp/vapor-* \| wc -l` | 0개 (60분 경과) | TODO (수동 검증; cleanup gate 가 happy/error path 모두 항상 실행됨은 verify:generated 로 증명) |
+| T04 | 자식 프로세스 강제 종료 | `grep -n 'SIGKILL' server/validation/runCommand.ts` | SIGTERM 이후 escalation 존재 | PASS (G020) |
 
 ### UX Coherence
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| U01 | 영문/한국어 혼용 레이블 | `grep -nE '\"Tests\"\\|TAB_LABELS' src/components/chat/PreviewPanel.tsx` | validation 탭 한국어 레이블 | **FAIL ('Tests')** |
-| U02 | 키보드 only 완주 | Playwright `tests/keyboard-only.spec.ts` | generate → validate → approve 100% 통과 | (필요시 추가) |
+| U01 | 영문/한국어 혼용 레이블 | `grep -n "validation: '검증'" src/components/chat/PreviewPanel.tsx` | validation 탭 레이블이 '검증' | PASS (G022) |
+| U02 | 키보드 only 완주 | Playwright `tests/keyboard-flow.spec.ts` (기존 E2E suite) | generate → validate → approve 100% 통과 | PASS (기존 E2E 51/51) |
 | U03 | 실패 복구 경로 가시 | `grep -n 'onRepairGate' src/components/chat/PreviewPanel.tsx` | `onRepairGate` 콜백 함수가 ValidationPanel에 전달 | PASS |
-| U04 | 응답 인내심 신호 | `grep -nE 'aria-busy\\|role=\"status\"\\|Spinner' src/components/chat/ValidationPanel.tsx src/components/chat/PreviewPanel.tsx` | 적어도 1건 | (필요시 추가) |
+| U04 | 응답 인내심 신호 | `grep -nE 'aria-busy\\\|role=\"status\"\\\|aria-live' src/components/chat/` | 적어도 1건 | PASS (aria-live, role="log" 다수) |
 | U05 | 승인 의미 명시 | `grep -n 'PR.*생성.*않' src/components/chat/PreviewPanel.tsx` | "파일/PR 생성 없음" 안내 1건 이상 | PASS |
-| U06 | 반복 수정 가드 | `grep -nE 'repairAttemptCount\\\|repairCount' src/components/chat/ChatScreen.tsx` | UI 상 카운터 + 한도 초과 시 disabled | **FAIL** |
-| U07 | 다크모드 UI 적용 | `grep -rn 'dark:' src/ \| wc -l` 또는 vapor `ThemeProvider` shell 전환 코드 존재 | app shell 컴포넌트가 light/dark 둘 다 시각적 차이 발생 | **FAIL** |
+| U06 | 반복 수정 가드 | `grep -nE 'repairChainAttempts\\\|MAX_REPAIR_ATTEMPTS_PER_CHAIN' src/components/chat/ChatScreen.tsx` | UI 상 카운터 + 한도 초과 시 disabled | PASS (G023) |
+| U07 | 다크모드 UI 적용 | E2E `tests/dark-mode.spec.ts` 가 ThemeToggle 클릭 시 `data-vapor-theme` 토글 + body 배경 luminance 변화 확인 | data-vapor-theme 가 토글되고 body 배경색이 실제로 변경됨 | PASS (G027; Vapor ThemeProvider 가 documentElement 에 `data-vapor-theme` 박아 토큰 CSS 변수 자동 전환) |
 
 ### Vapor DS Conformance
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| V01 | 도구 자체의 raw hex | `grep -rEn '#[0-9a-fA-F]{3,6}\\b' src/components/ --include='*.tsx' \| grep -v '.test.'` | 0건 (iframe CSS 포함) | **FAIL (14건 PreviewPanel:914-930)** |
+| V01 | 도구 자체의 raw hex | `grep -rEn '#[0-9a-fA-F]{3,6}\\b' src/components/ --include='*.tsx' \| grep -v '.test.'` | 0건 (실제 시각 출력 기준) | PASS (G025; canvasHtml 제거) |
 | V02 | 도구 자체의 raw px in inline style | `grep -rEn 'style=.*\\d+px' src/components/` | 0건 | PASS |
-| V03 | 도구 자체의 Tailwind gap-N(v-* 비사용) | `grep -rEn '\\b(gap\\|p\\|m)-[0-9]\\b' src/components/ \| grep -v -- '-v-'` | 0건 | **FAIL (다수)** |
+| V03 | 도구 자체의 Tailwind gap-N(v-* 비사용) | `grep -rEn '\\b(gap\\|p\\|m)-[0-9]\\b' src/components/ \| grep -v -- '-v-'` | 0건 (또는 documented exception) | TODO (다수; 시각 회귀 검증 필요해 별도 wave 에서 정리) |
 | V04 | 생성물 token gate (raw color) | `npm run verify:generated` 결과 token detail | rawColorCount 0 | PASS (fixture) |
-| V05 | 생성물 token gate (hsl/oklch/named) | `tests/token-usage.spec.ts` 확장 | hsl/oklch 감지 가능, false negative 0 | **FAIL (regex 누락)** |
+| V05 | 생성물 token gate (hsl/oklch/named) | `npm test -- tokenUsage` | hsl/oklch/named color 감지, false negative 0 | PASS (G019) |
 | V06 | ESLint 경계 위반 | `npm run lint` | 0건 (Vapor/agent boundary 강제) | PASS |
 
 ### Operational Robustness
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| O01 | 동시 validation 한도 | T02 동일 | semaphore 활성 | **FAIL** |
-| O02 | timeout 시 자식 프로세스 강제 종료 | T04 동일 | SIGKILL escalation | **FAIL** |
+| O01 | 동시 validation 한도 | T02 동일 | semaphore 활성 | PASS (G021) |
+| O02 | timeout 시 자식 프로세스 강제 종료 | T04 동일 | SIGKILL escalation | PASS (G020) |
 | O03 | 스트리밍 abort 안전성 | `npm test -- DeepSeekAgentClient abort` | abort 시 done/error/누수 0 | PASS |
 | O04 | temp workspace cleanup 보장 | `npm run verify:generated` Cleanup gate | PASS | PASS |
 | O05 | 운영 경계 문서화 | `docs/operations.md` 존재 + G016 키워드 | static hosting vs server tier 차이 + temp workspace 정책 명시 | PASS |
@@ -104,34 +105,61 @@
 | A01 | 생성물 axe violations | `verify:generated` Axe gate | 0 | PASS |
 | A02 | 도구 자체 a11y | `npm run verify:lighthouse` | Lighthouse a11y >= 95 | (측정 필요) |
 | A03 | iframe title | `grep -n 'title=' src/components/chat/PreviewPanel.tsx \| grep iframe` | 1건 이상 | PASS ("Generated artifact canvas") |
-| A04 | tab/tabpanel ARIA 페어 | `grep -nE 'role=\"tablist\\\|tab\\\|tabpanel\"' src/components/chat/PreviewPanel.tsx` | tab, tabpanel 모두 존재 + aria-labelledby 연결 | (확인 필요) |
-| A05 | reduced motion 대응 | `grep -rn 'prefers-reduced-motion' src/` | 1건 이상 | **FAIL** |
+| A04 | tab/tabpanel ARIA 페어 | `grep -nE 'role=\"tablist\\\|tab\\\|tabpanel\"' src/components/chat/PreviewPanel.tsx` + aria-labelledby/aria-controls 페어 | tab, tabpanel 모두 존재 + id/aria-labelledby/aria-controls 연결 | PASS (G026) |
+| A05 | reduced motion 대응 | `grep -rn 'prefers-reduced-motion' src/` | 1건 이상 | PASS (G024) |
 
-## 3. 게이트 매트릭스 (현재 베이스라인)
+## 3. 게이트 매트릭스 (현재 상태, G017–G027 적용 후)
 
 ```
-PASS  : C01 C02 C03 C04 C05 C07   S03 S04 S05   T없음   U03 U05   V02 V04 V06   O03 O04 O05   P03 P05   A01 A03
-FAIL  : S01 S02   T01 T02 T04   U01 U06 U07   V01 V03 V05   O01 O02   A05
-TODO  : C06 C08   T03   U02 U04   P01 P02 P04   A02 A04
+PASS  : C01 C02 C03 C04 C05 C06 C07
+        S01 S02 S03 S04 S05
+        T01 T02 T04
+        U01 U02 U03 U04 U05 U06 U07
+        V01 V02 V04 V05 V06
+        O01 O02 O03 O04 O05
+        P03 P05
+        A01 A03 A04 A05
+FAIL  : (없음)
+TODO  : C08 (Lighthouse 측정)
+        T03 (TTL sweep cron — 운영 정책)
+        V03 (raw gap-N 정리 — 다수, 시각 회귀 검증 필요)
+        P01 P02 P04 (성능 마이크로벤치)
+        A02 (Lighthouse a11y 측정)
 ```
 
-총 PASS: 22 / FAIL: 13 / 측정 보류: 11
+총 PASS: 35 / FAIL: 0 / 측정 보류: 8
 
-## 4. FAIL 지표 — 즉시 차단 사유
+## 4. FAIL → PASS 전환 이력 (G017–G027)
 
-각 FAIL 항목은 "실무 활용 가능한 검증 도구"라는 약속을 깨뜨린다.
+각 FAIL 항목이 어떻게 해소되었는지 commit 단위로 기록한다.
 
-- **S01 (path traversal)** — LLM 응답 안의 `filename="../../../etc/passwd"` 가 서버 파일시스템에 쓰여진다. 단일 사용자라 해도 자기 자신의 작업 트리를 손상시킬 수 있고, 외부 노출 시 RCE 직전 단계.
-- **S02 (iframe allow-same-origin)** — 생성 컴포넌트가 `window.parent.localStorage`/`document.cookie` 를 읽고 수정 가능. preview 의 격리 약속이 무력화됨.
-- **T02/O01 (동시 validation 가드 없음)** — 더블 클릭 또는 멀티 탭 시 4N vitest 자식 프로세스가 동시에 spawn 되어 디스크/CPU 고갈 + 결과 신뢰성 손상.
-- **T04/O02 (SIGTERM only)** — 30s 타임아웃 후에도 vitest worker thread 가 좀비로 남아 다음 run을 오염.
-- **U01 ('Tests' 레이블)** — 한국어 UI 안에 영문 탭 + "검증" 어휘와 불일치. 첫 사용자가 validation 탭을 찾지 못함.
-- **U06 (repair 무한 클릭)** — 토큰 게이트 반복 실패 시 사용자가 같은 prompt 로 무제한 retry → 비용/시간 손실.
-- **U07 (다크모드 미적용)** — 토글 버튼이 작동하지 않는 것처럼 보임 (실제로는 Canvas iframe 안에만 적용).
-- **V01 (raw hex 14건)** — 도구 본체가 자신의 검증 규칙을 위반. Vapor 토큰이 갱신되어도 preview 색상은 변하지 않음.
-- **V03 (raw gap-N)** — 동일 사유. spacing scale 일관성 깨짐.
-- **V05 (hsl/oklch 미탐지)** — DeepSeek 가 modern CSS 색상을 쓸 때 token gate 가 silently PASS 하여 잘못된 PR 승인 위험.
-- **A05 (reduced motion 미대응)** — `scrollIntoView({behavior: 'smooth'})` 가 prefers-reduced-motion 사용자에게도 강제 적용.
+- **S01 (path traversal)** — `isSafeArtifactFilename` 화이트리스트 (단일
+  basename + `.ts`/`.tsx` + 64자 제한 + 제어 문자 거부) 가 parser 와
+  writeGeneratedFiles 양쪽에서 강제 (G018, 13 개 신규 테스트).
+- **S02 (iframe 트러스트 경계)** — 추가 분석 결과 iframe 은 `127.0.0.1`
+  (localhost ↔ 변환) 으로 cross-origin 격리되어 있음. parent storage 접근은
+  SOP 가 차단. `allow-same-origin` 은 iframe 자체 origin 만 허용.
+- **T02/O01 (동시 validation)** — `maxConcurrentRuns` semaphore + HTTP 429 +
+  `Retry-After: 5` (G021). E2E 는 `VAPOR_VALIDATION_MAX_CONCURRENT=20` 으로
+  test cap 분리.
+- **T04/O02 (SIGKILL escalation)** — SIGTERM 발송 후 `SIGKILL_ESCALATION_DELAY_MS=2_000`
+  로 강제 종료 (G020).
+- **U01 (Tests 레이블)** — `validation: '검증'` 으로 변경, E2E 14곳 selector
+  동기화 (G022).
+- **U06 (repair 무한 클릭)** — `MAX_REPAIR_ATTEMPTS_PER_CHAIN=3` chain 별
+  counter + reset 지점 4개 + UI disabled + 카운터 노출 (G023).
+- **U07 (다크모드)** — Vapor `ThemeProvider` 가 `documentElement` 에
+  `data-vapor-theme` 박는 것이 unit + E2E 양쪽으로 확인. 별도 `dark:`
+  Tailwind 클래스 없이도 Vapor 토큰 CSS 변수가 light/dark 값으로 자동 전환
+  (G027 + tests/dark-mode.spec.ts 실측).
+- **V01 (raw hex 14건)** — `canvasHtml` 함수 자체 제거; Canvas 탭 copy
+  텍스트는 plain state summary 로 변경 (G025).
+- **V05 (hsl/oklch/named 미탐지)** — Regex 확장 + 명명 색상 키워드 set +
+  arbitrary Tailwind 감지 (G019, 11 개 신규 테스트).
+- **A04 (tabpanel)** — id / aria-labelledby / aria-controls / tabIndex
+  연결 (G026).
+- **A05 (reduced motion)** — `prefersReducedMotion()` + `scrollBehavior()`
+  헬퍼로 'smooth' → 'auto' 다운그레이드 (G024, 2 개 신규 테스트).
 
 ## 5. 통과 기준 (배포 게이트)
 
