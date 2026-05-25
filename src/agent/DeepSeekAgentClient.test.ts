@@ -281,6 +281,58 @@ export function LeakedCode() {
     expect(conversationText).not.toContain('export function Foo');
   });
 
+  it('artifact-only 응답에 대해 한국어 fallback prose token 을 한 번 emit 한다', async () => {
+    // DeepSeek 가 prose 없이 artifact 만 emit 하는 경우 (실제 live smoke 에서 관찰됨).
+    // visibleConversationText 가 비어 있더라도 assistant bubble 이 빈 채로 남지
+    // 않도록 한국어 안내 token 이 1회 emit 되어야 한다.
+    const artifactOnlyContent = [
+      '<artifact-meta>',
+      '{"componentName":"PrimaryActionButton","primaryExport":"PrimaryActionButton","variants":[{"name":"Default"}]}',
+      '</artifact-meta>',
+      '<artifact type="component" filename="PrimaryActionButton.tsx">',
+      '```tsx',
+      'export function PrimaryActionButton() { return null; }',
+      '```',
+      '</artifact>',
+    ].join('\n');
+    vi.spyOn(globalThis, 'fetch').mockImplementation(async (input) => {
+      const url = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
+      if (url.includes('/validate')) {
+        return new Response(JSON.stringify({ status: 'pass', durationMs: 0, details: [] }), {
+          status: 200,
+        });
+      }
+      return new Response(
+        streamFrom([
+          `data: ${JSON.stringify({ choices: [{ delta: { content: artifactOnlyContent } }] })}\n\n`,
+          'data: [DONE]\n\n',
+        ]),
+        { status: 200 },
+      );
+    });
+    const client = new DeepSeekAgentClient('/chat', '/validate');
+
+    const events = await collect(client.sendMessage({ text: 'primary 버튼 생성' }));
+    const tokens = events
+      .filter((event): event is Extract<AgentEvent, { type: 'token' }> => event.type === 'token')
+      .map((event) => event.value);
+
+    // 한국어 fallback prose 가 1회 노출됨
+    const fallbackMatches = tokens.filter((value) =>
+      value.includes('생성된 산출물을 오른쪽 워크스페이스에 정리했습니다'),
+    );
+    expect(fallbackMatches).toHaveLength(1);
+
+    // raw artifact tag 는 절대 conversation token 에 노출되지 않음
+    const conversationText = tokens.join('');
+    expect(conversationText).not.toContain('<artifact');
+    expect(conversationText).not.toContain('```tsx');
+
+    // draft event 도 정상 emit (artifact workspace 보장)
+    const draftEvents = events.filter((event) => event.type === 'draft');
+    expect(draftEvents.length).toBeGreaterThanOrEqual(1);
+  });
+
   it('abort 시 done/error 없이 종료한다', async () => {
     const controller = new AbortController();
     vi.spyOn(globalThis, 'fetch').mockImplementationOnce(async () => {

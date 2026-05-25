@@ -65,10 +65,20 @@ test.describe('Live DeepSeek smoke', () => {
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();
 
-    // 4) Component / Story / Test tab 모두 노출 (mode=component 응답 기대)
-    await expect(page.getByRole('tab', { name: 'Component' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Story' })).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Test', exact: true })).toBeVisible();
+    // 4) artifact 산출물 탭 최소 1개 (Component / Story / Test) 노출.
+    //    Live DeepSeek 는 component 만 반환할 수도 있어 3개 모두 강요하지 않는다
+    //    — empty workspace 회귀만 차단.
+    const artifactTabCount = await Promise.all([
+      page.getByRole('tab', { name: 'Component' }).count(),
+      page.getByRole('tab', { name: 'Story' }).count(),
+      page.getByRole('tab', { name: 'Test', exact: true }).count(),
+    ]).then((counts) => counts.reduce((a, b) => a + b, 0));
+    expect(artifactTabCount).toBeGreaterThanOrEqual(1);
+
+    // 4-a) text empty 차단 (artifact-only 응답이라도 fallback prose 또는 모델
+    //      prose 가 반드시 conversation bubble 에 노출되어야 함)
+    const conversationTextLen = ((await assistant.textContent()) ?? '').trim().length;
+    expect(conversationTextLen).toBeGreaterThan(0);
 
     // 5) Canvas tab default 선택 + iframe 존재
     await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(

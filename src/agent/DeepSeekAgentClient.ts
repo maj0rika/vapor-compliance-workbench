@@ -121,6 +121,19 @@ export class DeepSeekAgentClient implements AgentClient {
       let responseText = '';
       let emittedConversationText = '';
       let emittedDone = false;
+      let fallbackEmitted = false;
+      const maybeEmitFallback = (): AgentEvent | null => {
+        if (fallbackEmitted) return null;
+        // Live DeepSeek 응답이 prose 없이 artifact 만 emit 하는 경우, conversation
+        // bubble 이 빈 채로 남는 회귀를 막는다. visible prose 가 비어 있고
+        // artifact 가 파싱 가능할 때 한 번만 한국어 안내 token 을 yield 한다.
+        if (emittedConversationText.trim()) return null;
+        if (!buildPreviewArtifact(responseText)) return null;
+        fallbackEmitted = true;
+        emittedConversationText = FALLBACK_PROSE;
+        return { type: 'token', value: FALLBACK_PROSE };
+      };
+
       for await (const event of parseDeepSeekStream(response.body, signal)) {
         if (event.type === 'token') {
           responseText += event.value;
@@ -134,6 +147,8 @@ export class DeepSeekAgentClient implements AgentClient {
           }
         } else if (event.type === 'done') {
           emittedDone = true;
+          const fb = maybeEmitFallback();
+          if (fb) yield fb;
           yield* this.buildDraftEvents(responseText, signal);
           yield event;
         } else {
@@ -142,6 +157,8 @@ export class DeepSeekAgentClient implements AgentClient {
       }
 
       if (!signal?.aborted && !emittedDone) {
+        const fb = maybeEmitFallback();
+        if (fb) yield fb;
         yield* this.buildDraftEvents(responseText, signal);
         yield { type: 'done' };
       }
@@ -173,6 +190,13 @@ export class DeepSeekAgentClient implements AgentClient {
     yield { type: 'draft', value: validated, replace: true, source: responseText };
   }
 }
+
+/**
+ * Live DeepSeek 응답이 prose 없이 artifact 만 emit 하는 경우에 한 번만 yield 되는
+ * 한국어 안내 token. assistant bubble 이 빈 채로 남는 회귀를 차단한다.
+ */
+const FALLBACK_PROSE =
+  '생성된 산출물을 오른쪽 워크스페이스에 정리했습니다. Canvas와 검증 탭에서 확인하세요.';
 
 function visibleConversationText(responseText: string): string {
   const withoutCompleteBlocks = responseText
