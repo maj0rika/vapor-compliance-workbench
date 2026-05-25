@@ -93,9 +93,13 @@ export function createArtifactRunFromMessage(
 
   const artifact = parseGeneratedArtifact(message.artifactSource);
   const mode: AgentMode = message.request?.mode ?? 'component';
+  // G011.1: deterministic-sample provenance 는 의미적 truth 이므로 options.source
+  // (caller hint) 보다 우선한다. verified sample run 이 underlying client 종류와
+  // 무관하게 'sample' 로 표시되어 mock/deepseek 와 혼동되지 않게 한다.
   const source: ArtifactRunSource =
-    options.source ??
-    (message.artifactProvenance === 'deterministic-sample' ? 'sample' : 'deepseek');
+    message.artifactProvenance === 'deterministic-sample'
+      ? 'sample'
+      : (options.source ?? 'deepseek');
 
   return {
     id: `${message.id}:${message.createdAt}`,
@@ -130,13 +134,52 @@ export function withValidation(
   };
 }
 
-/** 사용자가 로컬 승인을 누른 시점의 ApprovalState 반영. repo write 없음. */
+/**
+ * 사용자가 로컬 승인을 누른 시점의 ApprovalState 반영. repo write 없음.
+ *
+ * G011.1 invariant: validation.status === 'pass' 가 아닌 run 은 승인할 수 없다.
+ * `isApprovable(run)` 이 false 면 throw 한다 — 호출 직전 가드를 강제한다.
+ */
 export function withApproval(run: ArtifactRun, approvedAt: number): ArtifactRun {
+  if (!isApprovable(run)) {
+    throw new ArtifactRunApprovalError(run);
+  }
   return {
     ...run,
     approval: { type: 'local-review', approvedAt },
     status: 'approved',
   };
+}
+
+/** withApproval invariant 위반 시 발생. */
+export class ArtifactRunApprovalError extends Error {
+  constructor(run: ArtifactRun) {
+    const reason = run.validation ? `validation.status=${run.validation.status}` : 'validation 미실행';
+    super(`ArtifactRun ${run.id} 은(는) 승인 조건을 만족하지 않습니다 (${reason}).`);
+    this.name = 'ArtifactRunApprovalError';
+  }
+}
+
+/**
+ * G011.1: repair AgentRequest 에 parentRunId 가 반드시 있어야 함을 강제.
+ *
+ * repairIntent.failedGates 가 비어 있지 않은데 parentRunId 가 없으면 throw.
+ * 이로써 repair lineage 가 누락된 채로 새 ArtifactRun 이 만들어지는 회귀를 막는다.
+ */
+export function assertRepairIntentHasParentRunId(request: {
+  repairIntent?: {
+    failedGates: ReadonlyArray<unknown>;
+    parentRunId?: string;
+  };
+}): void {
+  const intent = request.repairIntent;
+  if (!intent) return;
+  if (intent.failedGates.length === 0) return;
+  if (!intent.parentRunId || intent.parentRunId.length === 0) {
+    throw new Error(
+      'Repair request 에 parentRunId 가 누락되었습니다. 실패한 ArtifactRun.id 를 반드시 전달하세요.',
+    );
+  }
 }
 
 /** 이 run 을 supersede 처리 (이후 새 run 으로 대체될 때 사용). */

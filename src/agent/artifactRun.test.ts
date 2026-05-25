@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  ArtifactRunApprovalError,
+  assertRepairIntentHasParentRunId,
   createArtifactRunFromMessage,
   isApprovable,
   markSuperseded,
@@ -127,5 +129,85 @@ describe('ArtifactRun lifecycle helpers (G011)', () => {
     expect(newRun.approval).toBeUndefined();
     expect(newRun.status).toBe('created');
     expect(isApprovable(newRun)).toBe(false);
+  });
+});
+
+describe('ArtifactRun approval invariant (G011.1)', () => {
+  function makeRun(): ArtifactRun {
+    return createArtifactRunFromMessage(assistantMessage())!;
+  }
+
+  it('created run 은 승인할 수 없다 (validation 미실행)', () => {
+    expect(() => withApproval(makeRun(), Date.now())).toThrow(ArtifactRunApprovalError);
+  });
+
+  it('failed run 은 승인할 수 없다', () => {
+    const failed = withValidation(makeRun(), FAIL);
+    expect(() => withApproval(failed, Date.now())).toThrow(ArtifactRunApprovalError);
+  });
+
+  it('passed run 만 승인 가능', () => {
+    const passed = withValidation(makeRun(), PASS);
+    const approved = withApproval(passed, 1_111);
+    expect(approved.status).toBe('approved');
+    expect(approved.approval?.approvedAt).toBe(1_111);
+  });
+});
+
+describe('ArtifactRun source classification (G011.1)', () => {
+  it('options.source 가 지정되면 그 값을 그대로 사용한다 (mock)', () => {
+    const run = createArtifactRunFromMessage(assistantMessage(), { source: 'mock' });
+    expect(run!.source).toBe('mock');
+  });
+
+  it('deterministic-sample 메시지는 options.source 와 무관하게 sample 로 매핑된다', () => {
+    const run = createArtifactRunFromMessage(
+      assistantMessage({ artifactProvenance: 'deterministic-sample' }),
+      { source: 'mock' },
+    );
+    expect(run!.source).toBe('sample');
+  });
+
+  it('options.source 미지정 시 기본은 deepseek', () => {
+    const run = createArtifactRunFromMessage(assistantMessage());
+    expect(run!.source).toBe('deepseek');
+  });
+});
+
+describe('assertRepairIntentHasParentRunId (G011.1)', () => {
+  it('repairIntent 가 없으면 no-op', () => {
+    expect(() => assertRepairIntentHasParentRunId({})).not.toThrow();
+  });
+
+  it('failedGates 가 비어 있으면 no-op', () => {
+    expect(() =>
+      assertRepairIntentHasParentRunId({
+        repairIntent: { failedGates: [], parentRunId: undefined },
+      }),
+    ).not.toThrow();
+  });
+
+  it('failedGates 가 있는데 parentRunId 가 누락되면 throw', () => {
+    expect(() =>
+      assertRepairIntentHasParentRunId({
+        repairIntent: { failedGates: ['typecheck'], parentRunId: undefined },
+      }),
+    ).toThrow(/parentRunId/);
+  });
+
+  it('failedGates 가 있고 parentRunId 가 빈 문자열이면 throw', () => {
+    expect(() =>
+      assertRepairIntentHasParentRunId({
+        repairIntent: { failedGates: ['typecheck'], parentRunId: '' },
+      }),
+    ).toThrow(/parentRunId/);
+  });
+
+  it('failedGates + parentRunId 가 모두 있으면 통과', () => {
+    expect(() =>
+      assertRepairIntentHasParentRunId({
+        repairIntent: { failedGates: ['typecheck'], parentRunId: 'run-1:1000' },
+      }),
+    ).not.toThrow();
   });
 });

@@ -3,10 +3,12 @@ import { Button, Text } from '@vapor-ui/core';
 import {
   DeepSeekAgentClient,
   MockAgentClient,
+  assertRepairIntentHasParentRunId,
   createArtifactRunFromMessage,
   createVerifiedSampleRun,
   createTemplateSampleRun,
   type AgentClient,
+  type ArtifactRunSource,
   type TemplateKey,
 } from '../../agent';
 import { PromptBar, type PromptModeOption } from '../prompt';
@@ -105,9 +107,17 @@ export function ChatScreen({
   );
   // G011: ChatMessage → ArtifactRun adapter. PreviewPanel/validation/approval
   // 은 message 가 아니라 ArtifactRun lifecycle 에 묶인다 (도메인 모델 1차 분리).
+  // G011.1: source 를 active client 종류에 따라 명시적으로 전달해 mock/deepseek
+  // 가 런타임에서 혼동되지 않게 한다. deterministic-sample provenance 는 adapter
+  // 내부에서 sample 로 자동 매핑된다.
+  const liveSource: ArtifactRunSource =
+    agent instanceof MockAgentClient ? 'mock' : 'deepseek';
   const currentArtifactRun = useMemo(
-    () => (draftMessage ? createArtifactRunFromMessage(draftMessage) : undefined),
-    [draftMessage],
+    () =>
+      draftMessage
+        ? createArtifactRunFromMessage(draftMessage, { source: liveSource })
+        : undefined,
+    [draftMessage, liveSource],
   );
   const latestDraft = draftMessage?.draft ?? '';
   const latestArtifactSource = draftMessage?.artifactSource;
@@ -216,8 +226,8 @@ export function ChatScreen({
                 onValidationStateChange={(state) =>
                   setValidationPipeline({ artifactRunId, state })
                 }
-                onRepair={(payload) =>
-                  send({
+                onRepair={(payload) => {
+                  const repairRequest = {
                     text:
                       '실패한 validation 결과를 바탕으로 수정해줘. 실패한 게이트만 고치고 전체 artifact를 다시 반환해.',
                     mode: latestArtifactMode ?? 'component',
@@ -229,8 +239,11 @@ export function ChatScreen({
                       // G011: 실패한 ArtifactRun 의 id 를 보존해 repair lineage 추적.
                       parentRunId: currentArtifactRun?.id,
                     },
-                  })
-                }
+                  };
+                  // G011.1: parentRunId 누락 시 즉시 throw — repair lineage 회귀 차단.
+                  assertRepairIntentHasParentRunId(repairRequest);
+                  send(repairRequest);
+                }}
                 canClose={Boolean(draftId)}
                 onClose={() => setClosedDraftId(draftId)}
               />

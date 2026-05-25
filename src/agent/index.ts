@@ -40,6 +40,8 @@ export {
   withApproval,
   markSuperseded,
   isApprovable,
+  assertRepairIntentHasParentRunId,
+  ArtifactRunApprovalError,
 } from './artifactRun';
 export type {
   ApprovalState,
