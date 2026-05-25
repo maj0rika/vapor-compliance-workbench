@@ -138,6 +138,36 @@ DEEPSEEK_API_KEY=... npm run smoke:live-deepseek
 smoke는 별도 `playwright.smoke.config.ts` 로 격리되어 있어 기본 E2E 실행에
 절대 포함되지 않습니다.
 
+## Ultragoal Acceptance (G001–G010)
+
+이 프로젝트는 10개의 ultragoal story 로 완료 조건을 정의합니다. 각 story 는
+production 코드 + unit/integration 테스트 + E2E spec 으로 증명됩니다.
+
+| ID | Story | 증명 |
+|----|-------|------|
+| G001 | Built-in template mode contracts | `tests/templates-deterministic.spec.ts` |
+| G002 | Happy path validation (`verify:generated`) | `npm run verify:generated` (6 gates) |
+| G003 | Failure fixtures fail at designated gates | `server/validation/validateGeneratedArtifact.test.ts` |
+| G004 | Repair loop with failure context | `src/agent/promptBuilder.test.ts`, `tests/repair-context.spec.ts` |
+| G005 | Approve gating (current artifactRun only) | `tests/approve-gating.spec.ts`, `src/components/chat/PreviewPanel.test.tsx` |
+| G006 | Canvas preview lifecycle (timeout 4번째 상태 포함) | `src/components/chat/PreviewPanel.test.tsx`, `tests/preview-runtime.spec.ts` |
+| G007 | Token Sync non-visual contract | `tests/templates-deterministic.spec.ts` (B) |
+| G008 | Structured ValidationPanel UI | `src/components/chat/ValidationPanel.test.tsx` |
+| G009 | Workflow proof (E2E + visual + docs) | `tests/visual-regression.spec.ts`, 본 문서 |
+| G010 | Live DeepSeek smoke 분리 | `playwright.smoke.config.ts`, `tests/live-deepseek.smoke.spec.ts` |
+
+검증 명령:
+
+```bash
+npm run typecheck
+npm run lint
+npm test
+npm run build
+npm run test:e2e          # 모든 E2E (smoke 제외, visual regression 포함)
+npm run verify:generated  # temp workspace 실 runner
+DEEPSEEK_API_KEY=... npm run smoke:live-deepseek  # 선택, CI hard gate 아님
+```
+
 ## Documentation
 
 - [Architecture](docs/architecture.md) — 레이어 구조, DeepSeek proxy, artifact flow

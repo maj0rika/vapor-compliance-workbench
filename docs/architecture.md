@@ -163,3 +163,105 @@ MVP 검증은 rule-based static check 다.
 - Vapor 토큰은 `bg-v-canvas-100`, `gap-v-200` 같은 `v-` 유틸리티로 사용한다.
 - 다크 모드는 Vapor `ThemeProvider` + `useTheme` 로 전환한다.
 - primary color 는 강조색으로 제한하고, 검증 상태에는 semantic color 를 사용한다.
+
+## Workbench 데이터 흐름 (ultragoal 기준)
+
+```txt
+PromptBar(template click → seedMode/seedText | starter → fixture)
+        ↓
+ChatScreen.handlePickSuggestion
+  ├─ starter 템플릿: loadSampleRun(createTemplateSampleRun(key))
+  └─ free-form: send(AgentRequest)
+        ↓
+useAgentStream  (AbortController, mountedRef gate)
+        ↓
+AgentClient.sendMessage(request)
+  ├─ DeepSeekAgentClient → /api/deepseek/chat (SSE)
+  └─ Mock / deterministic sample (no network)
+        ↓
+ChatMessage { role, text, draft, artifactSource, artifactProvenance, request }
+        ↓
+PreviewPanel  (key={artifactRunId} → 새 run 마다 remount)
+  ├─ ArtifactCanvas (component mode 한정)
+  ├─ Component/Story/Test 탭
+  └─ ValidationPanel (Tests 탭)
+```
+
+`artifactRunId = '${assistantMessage.id}:${createdAt}'` 가 한 artifactRun 의
+정체성이다. PreviewPanel 은 이 키로 mount 되므로 새 run 이 오면 validation
+state, approval state, Canvas state 가 React 레벨에서 자동 초기화된다. 이전 run 의
+PASS 가 새 run 으로 carry-over 되지 않는다는 G005 contract 가 이 키 메커니즘과
+`validationPipeline.artifactRunId === artifactRunId` 비교 두 곳에서 동시에
+보장된다.
+
+## Mode 별 contract
+
+| mode | 산출물 | Canvas iframe | validation gates |
+|------|--------|---------------|------------------|
+| `component` | component + story + test + a11y/token notes + artifact-meta | 필수 | Typecheck / Unit / Runtime Render / Axe / Vapor token / Cleanup |
+| `token-sync` | token map utility + test + mapping notes | **렌더 안 함** | Artifact parse / Token mapping schema / Typecheck / Unit / Vapor token / Cleanup |
+| `a11y-audit` | patch + test + a11y notes | 조건부 | Typecheck / Unit / Runtime / Axe / Cleanup |
+| `story-test` | story + test + optional component patch | 조건부 | Typecheck / Unit / optional Axe / Cleanup |
+
+Token Sync 가 Canvas tab 자체를 노출하지 않는 G007 분기는 `PreviewPanel` 의
+`canvasSection = canvas && !isTokenSync` 한 줄로 표현된다. 서버 validation runner
+도 `mode === 'token-sync'` 일 때 Runtime/Axe gate 를 emit 하지 않는다.
+
+## Canvas preview lifecycle
+
+```txt
+loading ─ ready signal ─→ ready
+   │
+   ├─ 8s timeout ─→ timeout (failed 와 구별되는 4번째 상태)
+   ├─ iframe import / mount error ─→ failed
+   └─ preview-runs endpoint failure ─→ failed
+```
+
+`previewRunId` 와 origin check 로 다른 run 의 메시지를 무시하고, ready 신호가
+8 초 안에 도착하지 않으면 `timeout` 으로 전환한다. UI 에는 한국어 안내
+("Canvas runtime이 응답하지 않습니다…") 가 표시되고 `aria-label="Canvas runtime:
+timeout"` 으로 노출된다.
+
+## Repair payload contract
+
+Fix with Agent 버튼은 다음 payload 로 `send()` 를 호출한다:
+
+```ts
+{
+  text: '실패한 validation 결과를 바탕으로 수정해줘…',
+  mode: latestArtifactMode,
+  previousArtifactSource: payload.artifactSource,
+  validationResult: payload.validationResult,
+  repairIntent: { failedGates: [...], maxAttempts: 1 },
+}
+```
+
+`promptBuilder.buildUserContent` 는 `previousArtifactSource` 와 `repairIntent`
+가 있으면 별도 Repair context section 을 prompt 에 주입한다:
+
+- 이전 artifact 원본 (8KB 상한)
+- 실패한 gate 목록
+- 각 failed gate 의 runner output 요약 (1.5KB 상한)
+- "실패한 gate 만 고치고, 통과한 gate 는 깨지 마라. 전체 artifact 를 같은 delimiter
+  형식으로 재반환하라" 지시
+
+이 덕분에 agent 가 "이전 실패 내역을 모른다" 고 답하는 G004 회귀가 차단된다.
+
+## ValidationPanel
+
+`/api/deepseek/validate` 가 반환한 `RemoteValidationResult` 를 markdown 대신
+구조화 UI 로 렌더한다 (G008):
+
+- 헤더: 전체 status 뱃지, 총 duration, timestamp, `n gates · m pass · k fail` 요약
+- gate card 별: status icon · label · duration · message · output disclosure ·
+  "출력 복사" · failed gate 의 "이 gate 수정" 액션
+- failed gate 는 기본적으로 output disclosure 가 열려 있어 E2E 와 사용자 모두
+  추가 클릭 없이 원인을 확인할 수 있다.
+- output 은 4KB 상한으로 잘리고 "출력이 잘렸습니다" 안내가 붙는다.
+
+## Live DeepSeek smoke 분리
+
+Live DeepSeek 호출은 응답 변동성으로 flaky 하므로 `verify:ci` / `test:e2e` 같은
+CI hard gate 에 포함되지 않는다. `playwright.smoke.config.ts` + `smoke:live-
+deepseek` 스크립트로 격리되며, `DEEPSEEK_API_KEY` 가 없으면 `test.skip` 으로
+suite 전체가 skip 되고 exit 0 으로 종료된다 (G010).
