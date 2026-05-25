@@ -81,4 +81,67 @@ describe('ConversationView', () => {
     expect(scrollIntoView).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: '최신으로 이동' })).toBeInTheDocument();
   });
+
+  // A05: prefers-reduced-motion 사용자에게는 smooth 가 즉시 jump 로 다운그레이드.
+  it('prefers-reduced-motion: reduce 인 사용자는 smooth scroll 없이 즉시 이동한다', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: query.includes('prefers-reduced-motion'),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      const { rerender } = render(
+        <ConversationView messages={[makeMessage('a', 'first')]} onRegenerate={vi.fn()} />,
+      );
+      scrollIntoView.mockClear();
+
+      rerender(
+        <ConversationView
+          messages={[makeMessage('a', 'first'), makeMessage('b', 'second')]}
+          onRegenerate={vi.fn()}
+        />,
+      );
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'auto', block: 'end' });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
+
+  it('reduced motion 비활성 상태에서는 smooth scroll 유지', () => {
+    const originalMatchMedia = window.matchMedia;
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }));
+
+    try {
+      const { rerender } = render(
+        <ConversationView messages={[makeMessage('a', 'first')]} onRegenerate={vi.fn()} />,
+      );
+      scrollIntoView.mockClear();
+      rerender(
+        <ConversationView
+          messages={[makeMessage('a', 'first'), makeMessage('b', 'second')]}
+          onRegenerate={vi.fn()}
+        />,
+      );
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'end' });
+    } finally {
+      window.matchMedia = originalMatchMedia;
+    }
+  });
 });

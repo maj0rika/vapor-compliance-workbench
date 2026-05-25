@@ -9,6 +9,26 @@ export type ConversationViewProps = {
 };
 
 /**
+ * `prefers-reduced-motion: reduce` 사용자에게는 smooth scroll 을 즉시 jump
+ * 로 다운그레이드한다. matchMedia 가 없는 SSR/jsdom 환경에서는 안전하게
+ * smooth 를 기본값으로 둔다.
+ */
+function prefersReducedMotion(): boolean {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+    return false;
+  }
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+}
+
+function scrollBehavior(): ScrollBehavior {
+  return prefersReducedMotion() ? 'auto' : 'smooth';
+}
+
+/**
  * 메시지 thread 스크롤 컨테이너. 새 메시지가 추가되면 하단으로 스크롤한다.
  */
 export function ConversationView({
@@ -22,7 +42,7 @@ export function ConversationView({
 
   useEffect(() => {
     if (!stickToBottomRef.current) return;
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    endRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'end' });
   }, [messages]);
 
   const handleScroll = () => {
@@ -38,7 +58,7 @@ export function ConversationView({
   const scrollToLatest = () => {
     stickToBottomRef.current = true;
     setShowJumpToLatest(false);
-    endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    endRef.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'end' });
   };
 
   return (
