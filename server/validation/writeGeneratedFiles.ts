@@ -1,7 +1,10 @@
 import { access, mkdir, symlink, writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
-import type { GeneratedArtifact } from '../../src/agent/responseParser.ts';
+import {
+  isSafeArtifactFilename,
+  type GeneratedArtifact,
+} from '../../src/agent/responseParser.ts';
 
 /**
  * Walk up the directory tree from `startDir` until we find a `node_modules`
@@ -30,6 +33,17 @@ export async function writeGeneratedFiles(
 ): Promise<void> {
   if (!artifact.component || !artifact.story || !artifact.test) {
     throw new Error('component, story, and test artifacts are required.');
+  }
+  // Defense in depth: parser 가 이미 isSafeArtifactFilename 으로 거른 결과만
+  // 여기 도달해야 하지만, 별도 호출 경로 (테스트 fixture, 후속 리팩터) 가
+  // 우회할 가능성을 차단한다. 이 검증을 통과하지 못한 filename 은 즉시
+  // throw 하여 workspace 외부에 파일이 쓰이지 않게 한다.
+  for (const part of [artifact.component, artifact.story, artifact.test]) {
+    if (!isSafeArtifactFilename(part.filename)) {
+      throw new Error(
+        `Unsafe artifact filename rejected by writeGeneratedFiles: ${JSON.stringify(part.filename)}`,
+      );
+    }
   }
   const srcDir = join(workspacePath, 'src');
   await mkdir(srcDir, { recursive: true });

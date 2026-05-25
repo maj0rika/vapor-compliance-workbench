@@ -36,6 +36,34 @@ const ARTIFACT_RE =
 const META_RE = /<artifact-meta>\s*([\s\S]*?)\s*<\/artifact-meta>/;
 const NOTES_RE = /<notes\s+type="(a11y|token)">([\s\S]*?)<\/notes>/g;
 
+/**
+ * Artifact filename safety policy.
+ *
+ * LLM 응답의 `filename="..."` 값은 서버 측에서 `path.join(srcDir, filename)`
+ * 로 사용되므로, path traversal (`../`, 절대 경로), 위험한 확장자, 제어 문자
+ * 가 통과하면 temp workspace 밖의 파일을 덮어쓰거나 임의 실행 코드를 생성할
+ * 수 있다. 이 정규식은 강한 화이트리스트로 단일 basename + `.ts`/`.tsx`
+ * 확장자만 허용한다.
+ */
+const SAFE_FILENAME_RE = /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,62})\.(ts|tsx)$/;
+
+/**
+ * filename 이 안전한 단일 basename 인지 검증한다. 외부 입력 (LLM 응답, 첨부
+ * 파일 메타) 을 server 또는 file write 경로로 흘리기 전에 반드시 통과해야
+ * 한다.
+ */
+export function isSafeArtifactFilename(filename: string): boolean {
+  if (typeof filename !== 'string') return false;
+  if (filename.length === 0 || filename.length > 64) return false;
+  if (filename.includes('\0')) return false;
+  // ASCII 제어 문자 (0x00-0x1F, 0x7F) 거부
+  for (let i = 0; i < filename.length; i++) {
+    const code = filename.charCodeAt(i);
+    if (code < 0x20 || code === 0x7f) return false;
+  }
+  return SAFE_FILENAME_RE.test(filename);
+}
+
 export function parseGeneratedArtifact(markdown: string): GeneratedArtifact {
   const metadataParse = parseArtifactMetadata(markdown);
   const result: GeneratedArtifact = {
@@ -47,10 +75,15 @@ export function parseGeneratedArtifact(markdown: string): GeneratedArtifact {
 
   for (const match of markdown.matchAll(ARTIFACT_RE)) {
     const type = match[1] as ArtifactType;
+    const filename = match[2];
+    // path traversal / 위험한 확장자 차단. 안전하지 않은 filename 은 이
+    // artifact 를 결과에서 누락시켜, server write/UI 표시 모두에서 사용되지
+    // 않게 한다.
+    if (!isSafeArtifactFilename(filename)) continue;
     const artifact: CodeArtifact = {
       type,
-      filename: match[2],
-      language: (match[3] || inferLanguage(match[2])) as 'ts' | 'tsx',
+      filename,
+      language: (match[3] || inferLanguage(filename)) as 'ts' | 'tsx',
       content: match[4].trim(),
     };
     result[type] = artifact;
