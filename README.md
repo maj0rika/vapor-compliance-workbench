@@ -124,6 +124,20 @@ DEEPSEEK_API_KEY=... # .env.local 에 저장
 npm run dev -- --host 127.0.0.1
 ```
 
+## Live DeepSeek Smoke
+
+Live DeepSeek smoke는 CI hard gate가 아닙니다.
+
+응답 변동성으로 flaky할 수 있으며, `verify:ci` / `test:e2e` 에 포함되지 않습니다.
+API key가 없으면 테스트가 skip되고 suite는 exit code 0으로 정상 종료합니다.
+
+```bash
+DEEPSEEK_API_KEY=... npm run smoke:live-deepseek
+```
+
+smoke는 별도 `playwright.smoke.config.ts` 로 격리되어 있어 기본 E2E 실행에
+절대 포함되지 않습니다.
+
 ## Documentation
 
 - [Architecture](docs/architecture.md) — 레이어 구조, DeepSeek proxy, artifact flow

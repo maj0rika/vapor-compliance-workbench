@@ -19,6 +19,7 @@
     "verify:generated": "node server/validation/run-generated-validation.ts",
     "verify:lighthouse": "node server/validation/run-lighthouse-budget.ts",
     "verify:ci": "npm run verify && npm run verify:generated && npm run verify:lighthouse",
+    "smoke:live-deepseek": "playwright test --config=playwright.smoke.config.ts",
     "preview": "vite preview"
   },
   "dependencies": {
