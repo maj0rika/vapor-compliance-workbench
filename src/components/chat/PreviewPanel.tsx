@@ -1030,7 +1030,7 @@ function parseArtifactSections(markdown: string): ArtifactSection[] {
     return [{ id: 'component', label: TAB_LABELS.component, content: markdown }];
   }
 
-  return matches.map((match, index) => {
+  const sections = matches.map((match, index) => {
     const title = match[1].toLowerCase() as ArtifactTab;
     const start = (match.index ?? 0) + match[0].length;
     const end = matches[index + 1]?.index ?? markdown.length;
@@ -1041,6 +1041,24 @@ function parseArtifactSections(markdown: string): ArtifactSection[] {
       content: `## ${TAB_LABELS[title]}\n\n${content}`,
     };
   });
+
+  return mergeDuplicateArtifactSections(sections);
+}
+
+function mergeDuplicateArtifactSections(sections: ArtifactSection[]): ArtifactSection[] {
+  const byId = new Map<ArtifactTab, ArtifactSection>();
+
+  for (const section of sections) {
+    const existing = byId.get(section.id);
+    if (!existing) {
+      byId.set(section.id, section);
+      continue;
+    }
+
+    existing.content = `${existing.content}\n\n${section.content}`;
+  }
+
+  return [...byId.values()];
 }
 
 /** React.lazy 패널 로딩 중 Suspense placeholder. */

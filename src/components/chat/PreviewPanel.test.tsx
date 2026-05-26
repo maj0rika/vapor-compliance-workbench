@@ -264,6 +264,29 @@ describe('PreviewPanel', () => {
     expect(screen.getByText(/PrimaryButton/)).toBeInTheDocument();
   });
 
+  it('중복 artifact 섹션이 들어와도 탭은 타입별로 한 번만 표시한다', () => {
+    const duplicatedArtifact = `${ARTIFACT}
+
+## Story
+
+\`\`\`tsx
+export const Secondary = {};
+\`\`\`
+
+## Test
+
+\`\`\`tsx
+expect(false).toBe(false);
+\`\`\`
+`;
+
+    render(<PreviewPanel draft={duplicatedArtifact} onClose={vi.fn()} />);
+
+    expect(screen.getAllByRole('tab', { name: '코드' })).toHaveLength(1);
+    expect(screen.getAllByRole('tab', { name: '스토리' })).toHaveLength(1);
+    expect(screen.getAllByRole('tab', { name: '테스트' })).toHaveLength(1);
+  });
+
   it('runner 결과 전에는 정적 검증 badge 를 표시하지 않는다', () => {
     render(<PreviewPanel draft={ARTIFACT} onClose={vi.fn()} />);
 

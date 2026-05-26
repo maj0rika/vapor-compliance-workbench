@@ -152,7 +152,7 @@ export function ChatScreen({
   const artifactRunId = currentArtifactRun?.id;
 
   const isEmpty = messages.length === 0;
-  const showPreview = draftId ? draftId !== closedDraftId : true;
+  const showPreview = Boolean(draftId && draftId !== closedDraftId);
   const currentValidationPipeline =
     validationPipeline.artifactRunId === artifactRunId
       ? validationPipeline.state

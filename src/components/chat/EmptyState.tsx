@@ -108,7 +108,7 @@ export function EmptyState({
           </div>
         </div>
 
-        <div className="flex gap-v-150">
+        <div className="flex flex-col gap-v-150 lg:flex-row">
           <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-v-300 bg-v-primary-100 text-v-primary">
             <AiSmartieOutlineIcon size={20} aria-hidden="true" />
           </div>
@@ -161,7 +161,7 @@ export function EmptyState({
               </div>
             )}
 
-            <div className="grid gap-v-100 sm:grid-cols-2">
+            <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,240px),1fr))] gap-v-100">
               {TEMPLATES.map((template) => (
                 <button
                   key={template.label}
@@ -169,15 +169,15 @@ export function EmptyState({
                   onClick={() => onPick(template.templateKey)}
                   className="flex min-w-0 flex-col items-start gap-v-50 rounded-v-300 border border-v-normal bg-v-canvas-100 p-v-200 text-left transition-colors hover:border-v-primary hover:bg-v-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v-primary"
                 >
-                  <span className="text-sm font-medium">{template.label}</span>
+                  <span className="break-keep text-sm font-medium">{template.label}</span>
                   <span
-                    className="text-xs"
+                    className="break-keep text-xs leading-5"
                     style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
                   >
                     {template.output}
                   </span>
                   <span
-                    className="text-xs"
+                    className="break-keep text-xs leading-5"
                     style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
                   >
                     {template.gates}
