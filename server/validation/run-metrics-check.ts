@@ -285,6 +285,41 @@ async function run(): Promise<void> {
     'createIsolatedPreviewOrigin 호출 누락 (parent storage 접근 위험)',
   );
 
+  // P02: parse 성능 마이크로벤치 테스트 존재 + 100ms 예산 assertion.
+  // streaming response 가 완료된 직후 즉시 parse 가 호출되므로 parse latency
+  // 가 100ms 를 넘으면 사용자가 "응답 완료 → preview 렌더" 사이 stall 을
+  // 체감한다. perf 테스트가 budget assertion 으로 회귀를 막아야 한다.
+  let parserPerfSrc = '';
+  try {
+    parserPerfSrc = await readFile(join(ROOT, 'src/agent/responseParser.perf.test.ts'), 'utf8');
+  } catch {
+    parserPerfSrc = '';
+  }
+  record(
+    /parseGeneratedArtifact/.test(parserPerfSrc) &&
+      /toBeLessThan\(100\)/.test(parserPerfSrc) &&
+      /performance\.now/.test(parserPerfSrc),
+    'P02',
+    'artifact parse 100ms budget 회귀 테스트',
+    'responseParser.perf.test.ts 누락 또는 budget assertion 누락',
+  );
+
+  // P04: validation runner 가 SLA 명시된 30s hard timeout 을 기본값으로
+  // 적용하고, timeout 분기가 테스트로 PASS 함을 정적 보장. runaway child
+  // process 가 워커를 영원히 점유하지 않도록 한다.
+  const runCmdTestSrc = await readFile(
+    join(ROOT, 'server/validation/runCommand.test.ts'),
+    'utf8',
+  );
+  record(
+    /timeoutMs\s*=\s*30_000/.test(runCmdSrc) &&
+      /Command timed out/.test(runCmdSrc) &&
+      /Command timed out/.test(runCmdTestSrc),
+    'P04',
+    'validation 30s hard timeout 기본값 + 테스트',
+    'timeoutMs = 30_000 default 또는 timeout 테스트 누락',
+  );
+
   // Summary
   const passed = verdicts.filter((v) => v.status === 'pass').length;
   const failed = verdicts.filter((v) => v.status === 'fail');
