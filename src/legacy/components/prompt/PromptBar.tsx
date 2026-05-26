@@ -7,7 +7,7 @@ import {
 } from 'react';
 import { Button, IconButton, Text, Textarea, Tooltip } from '@vapor-ui/core';
 import { AttachFileOutlineIcon } from '@vapor-ui/icons';
-import { describeRejection, validateFiles } from '../../lib/validation';
+import { describeRejection, validateFiles } from '../../../lib/validation';
 import { AttachmentList } from './AttachmentList';
 import { PromptModeSelector } from './PromptModeSelector';
 import type {

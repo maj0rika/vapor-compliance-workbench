@@ -1,6 +1,6 @@
 import { Badge, IconButton, Spinner, Text, Tooltip } from '@vapor-ui/core';
 import { CloseOutlineIcon } from '@vapor-ui/icons';
-import { formatBytes } from '../../lib/file';
+import { formatBytes } from '../../../lib/file';
 import type { AttachmentStatus, PromptAttachment } from './types';
 
 type StatusMeta = {

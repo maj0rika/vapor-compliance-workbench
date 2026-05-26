@@ -1,11 +1,11 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
-import { buildDeepSeekPayload } from '../../src/agent/promptBuilder';
+import { buildDeepSeekPayload } from '../../../src/legacy/agent/promptBuilder';
 import type {
   AgentMode,
   AgentRequest,
   MessageAttachment,
   PriorTurn,
-} from '../../src/agent/types';
+} from '../../../src/legacy/agent/types';
 
 type DeepSeekProxyRequest = {
   text?: unknown;

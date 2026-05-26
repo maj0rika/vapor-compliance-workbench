@@ -2,7 +2,7 @@
 // Launches headed Chromium, hits localhost:5190, mocks chat,
 // triggers all 4 NL chips, captures screenshots.
 import { chromium } from '@playwright/test';
-import { selectScript } from '../src/agent/scripts.ts';
+import { selectScript } from '../src/legacy/agent/scripts.ts';
 import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 

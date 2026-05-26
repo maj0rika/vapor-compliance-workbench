@@ -1,6 +1,6 @@
 import { join } from 'node:path';
-import { parseGeneratedArtifact } from '../../src/agent/responseParser.ts';
-import { checkTokenUsage } from '../../src/agent/tokenUsage.ts';
+import { parseGeneratedArtifact } from '../../../src/legacy/agent/responseParser.ts';
+import { checkTokenUsage } from '../../../src/legacy/agent/tokenUsage.ts';
 import { createTempWorkspace } from './createTempWorkspace.ts';
 import { runCommand } from './runCommand.ts';
 import type { GeneratedValidationResult, ValidationDetail, ValidationStatus } from './types.ts';

@@ -19,7 +19,7 @@ import {
   AXE_FAIL_ARTIFACT,
   WRONG_PRIMARY_EXPORT_ARTIFACT,
   BROKEN_ARTIFACT,
-} from '../../src/agent/scripts.ts';
+} from '../../../src/legacy/agent/scripts.ts';
 
 const TIMEOUT_MS = 120_000;
 

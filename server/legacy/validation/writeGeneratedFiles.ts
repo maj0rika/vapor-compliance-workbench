@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import {
   isSafeArtifactFilename,
   type GeneratedArtifact,
-} from '../../src/agent/responseParser.ts';
+} from '../../../src/legacy/agent/responseParser.ts';
 
 /**
  * Walk up the directory tree from `startDir` until we find a `node_modules`

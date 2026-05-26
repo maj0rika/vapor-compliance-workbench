@@ -1,6 +1,6 @@
 import { useRef, useState, type ChangeEvent, type DragEvent } from 'react';
 import { Button, Callout, Text } from '@vapor-ui/core';
-import { describeRejection, validateFiles } from '../../lib/validation';
+import { describeRejection, validateFiles } from '../../../lib/validation';
 import type { DropzoneProps, FileRejection } from './types';
 
 /**

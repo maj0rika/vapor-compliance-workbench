@@ -1,4 +1,4 @@
-import type { TokenCheckResult } from '../../src/agent/tokenUsage.ts';
+import type { TokenCheckResult } from '../../../src/legacy/agent/tokenUsage.ts';
 
 export type ValidationStatus = 'pass' | 'warn' | 'fail';
 

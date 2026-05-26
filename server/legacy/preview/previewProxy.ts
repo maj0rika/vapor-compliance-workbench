@@ -3,7 +3,7 @@ import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { parseGeneratedArtifact } from '../../src/agent/responseParser.ts';
+import { parseGeneratedArtifact } from '../../../src/legacy/agent/responseParser.ts';
 
 const CLEANUP_AFTER_MS = 60_000;
 

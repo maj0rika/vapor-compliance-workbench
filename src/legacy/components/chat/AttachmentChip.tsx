@@ -1,6 +1,6 @@
 import { Text } from '@vapor-ui/core';
 import { FileIcon } from '@vapor-ui/icons';
-import { formatBytes } from '../../lib/file';
+import { formatBytes } from '../../../lib/file';
 import type { MessageAttachment } from '../../agent';
 
 export type AttachmentChipProps = {

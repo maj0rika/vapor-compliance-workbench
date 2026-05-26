@@ -6,7 +6,7 @@ import { writeGeneratedFiles } from './writeGeneratedFiles.ts';
 import type {
   CodeArtifact,
   GeneratedArtifact,
-} from '../../src/agent/responseParser.ts';
+} from '../../../src/legacy/agent/responseParser.ts';
 
 const SAFE_COMPONENT: CodeArtifact = {
   type: 'component',
