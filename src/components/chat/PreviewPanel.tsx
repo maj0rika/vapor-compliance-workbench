@@ -12,7 +12,11 @@ const MetadataPanel = lazy(() =>
 const TokenSyncPanel = lazy(() =>
   import('./TokenSyncPanel').then((m) => ({ default: m.TokenSyncPanel })),
 );
-import { ValidationPanel, type RemoteValidationResult } from './ValidationPanel';
+// G034: ValidationPanel 도 동일하게 분리해 초기 JS bundle 예산 (200KB gzip) 헤드룸 확보.
+const ValidationPanel = lazy(() =>
+  import('./ValidationPanel').then((m) => ({ default: m.ValidationPanel })),
+);
+import type { RemoteValidationResult } from './ValidationPanel';
 
 type ArtifactTab = 'canvas' | 'metadata' | 'token-mapping' | 'component' | 'story' | 'test' | 'validation';
 
@@ -476,30 +480,32 @@ export function PreviewPanel({
             <TokenSyncPanel />
           </Suspense>
         ) : active?.id === 'validation' ? (
-          <ValidationPanel
-            result={validationResult}
-            status={validationStatus}
-            errorMessage={validationErrorMessage}
-            runAt={validationRunAt}
-            onCopyOutput={(label) => {
-              const detail = validationResult?.details.find((d) => d.label === label);
-              if (detail?.output) void navigator.clipboard?.writeText(detail.output);
-            }}
-            onRepairGate={onRepair && artifactSource && validationResult && !repairChainExhausted
-              ? (gate) => {
-                  if (repairChainExhausted) return;
-                  const gateKey = labelToGateKey(gate);
-                  if (gateKey) {
-                    onRepair({
-                      artifactSource,
-                      validationResult,
-                      failedGates: [gateKey],
-                    });
+          <Suspense fallback={<LazyPanelFallback />}>
+            <ValidationPanel
+              result={validationResult}
+              status={validationStatus}
+              errorMessage={validationErrorMessage}
+              runAt={validationRunAt}
+              onCopyOutput={(label) => {
+                const detail = validationResult?.details.find((d) => d.label === label);
+                if (detail?.output) void navigator.clipboard?.writeText(detail.output);
+              }}
+              onRepairGate={onRepair && artifactSource && validationResult && !repairChainExhausted
+                ? (gate) => {
+                    if (repairChainExhausted) return;
+                    const gateKey = labelToGateKey(gate);
+                    if (gateKey) {
+                      onRepair({
+                        artifactSource,
+                        validationResult,
+                        failedGates: [gateKey],
+                      });
+                    }
                   }
-                }
-              : undefined
-            }
-          />
+                : undefined
+              }
+            />
+          </Suspense>
         ) : active ? (
           <div aria-live="polite">
             <Markdown>{active.content}</Markdown>
