@@ -11,17 +11,15 @@ test.describe('empty workbench', () => {
     await expect(
       page.getByText('자연어로 요청하면 Vapor 컴포넌트 코드'),
     ).toBeVisible();
-    await expect(
-      page.getByLabel('Prompt to Artifact to Canvas to Validation to Repair to Approve'),
-    ).toBeVisible();
-    await expect(page.locator('[aria-label="Validation: waiting"]')).toBeVisible();
+    await expect(page.getByText('현재: 요청')).toBeVisible();
+    await expect(page.locator('[aria-label="검증: 대기"]')).toBeVisible();
     await expect(page.getByText('Canvas 대기')).toBeVisible();
     await expect(page.getByText('검증 게이트 준비됨')).toBeVisible();
-    await expect(page.getByText('실패 시 보수 루프 사용 가능')).toBeVisible();
-    await expect(page.getByRole('button', { name: '검증 실행' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toBeDisabled();
-    await expect(page.getByRole('button', { name: '로컬 승인' })).toBeDisabled();
-    await expect(page.locator('iframe[title="Generated artifact canvas"]')).toHaveCount(0);
+    await expect(page.getByText('보수 루프 준비됨')).toBeVisible();
+    await expect(page.getByRole('button', { name: '검증 실행' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '실패 수정' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '로컬 승인' })).toHaveCount(0);
+    await expect(page.locator('iframe[title="생성물 Canvas 미리보기"]')).toHaveCount(0);
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - window.innerWidth,

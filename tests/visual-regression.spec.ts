@@ -25,12 +25,12 @@ test.describe('visual regression', () => {
     await expect(page).toHaveScreenshot('empty-workbench-1280.png', snapshotOptions);
   });
 
-  test('(2) Primary Button fixture loaded — Canvas tab', async ({ page }) => {
+  test('(2) 기본 버튼 fixture loaded — Canvas tab', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Primary Button' }).click();
+    await page.getByRole('button', { name: '기본 버튼' }).click();
 
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({
       timeout: 6000,
     });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
@@ -45,12 +45,12 @@ test.describe('visual regression', () => {
     await expect(page).toHaveScreenshot('primary-button-canvas-1280.png', snapshotOptions);
   });
 
-  test('(3) Token Sync fixture — non-visual workspace', async ({ page }) => {
+  test('(3) 토큰 동기화 fixture — non-visual workspace', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Token Sync' }).click();
+    await page.getByRole('button', { name: '토큰 동기화' }).click();
 
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({
       timeout: 6000,
     });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
@@ -72,7 +72,7 @@ test.describe('visual regression', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
     await page.getByRole('button', { name: '검증 샘플 실행' }).click();
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({
       timeout: 6000,
     });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
@@ -104,11 +104,11 @@ test.describe('visual regression', () => {
     });
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Primary Button' }).click();
+    await page.getByRole('button', { name: '기본 버튼' }).click();
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(
-      page.getByRole('button', { name: '현재 artifact 로컬 승인' }),
+      page.getByRole('button', { name: '로컬 승인' }),
     ).toBeEnabled({ timeout: 10_000 });
 
     await page.waitForTimeout(500);

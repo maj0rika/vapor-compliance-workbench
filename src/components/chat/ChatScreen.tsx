@@ -73,6 +73,7 @@ export function ChatScreen({
     artifactRunId?: string;
     state: ValidationPipelineState;
   }>({ state: 'idle' });
+  const [approvedArtifactRunId, setApprovedArtifactRunId] = useState<string | undefined>();
   /**
    * 한 repair chain 안에서 user 가 "실패 수정 (Fix with Agent)" 또는 gate
    * 단위 수정 버튼을 누른 횟수. 한도(MAX_REPAIR_ATTEMPTS_PER_CHAIN)에 도달
@@ -161,11 +162,13 @@ export function ChatScreen({
     hasDraft: Boolean(latestDraft),
     hasArtifactSource: Boolean(latestArtifactSource),
     validationState: currentValidationPipeline,
+    approved: Boolean(artifactRunId && approvedArtifactRunId === artifactRunId),
   });
 
   const handlePickSuggestion = (templateKey: TemplateKey) => {
     setClosedDraftId(undefined);
     setValidationPipeline({ state: 'idle' });
+    setApprovedArtifactRunId(undefined);
     setRepairChainAttempts(0);
     loadSampleRun(createTemplateSampleRun(templateKey));
   };
@@ -181,6 +184,7 @@ export function ChatScreen({
   const handleRunVerifiedSample = () => {
     setClosedDraftId(undefined);
     setValidationPipeline({ state: 'idle' });
+    setApprovedArtifactRunId(undefined);
     setRepairChainAttempts(0);
     loadSampleRun(createVerifiedSampleRun());
   };
@@ -189,6 +193,7 @@ export function ChatScreen({
   const handleReset = () => {
     setClosedDraftId(undefined);
     setValidationPipeline({ state: 'idle' });
+    setApprovedArtifactRunId(undefined);
     setRepairChainAttempts(0);
     reset();
   };
@@ -248,7 +253,7 @@ export function ChatScreen({
             <button
               type="button"
               aria-label={`Artifact workspace width ${Math.round(previewWidth)} percent`}
-              className="hidden w-2 cursor-col-resize appearance-none items-stretch justify-center border-0 bg-v-canvas-100 p-v-0 hover:bg-v-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-v-primary md:flex"
+              className="hidden w-2 cursor-col-resize appearance-none items-stretch justify-center border-0 bg-v-canvas-100 p-v-0 hover:bg-v-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-v-primary md:flex md:self-stretch"
               onPointerDown={(event) => {
                 event.preventDefault();
                 setIsResizing(true);
@@ -264,10 +269,10 @@ export function ChatScreen({
                 }
               }}
             >
-              <span className="h-full w-px bg-v-normal" />
+              <span className="h-full min-h-full w-px bg-v-normal" />
             </button>
             <div
-              className="artifact-workspace-pane flex min-h-0 min-w-0 flex-col md:flex-none"
+              className="artifact-workspace-pane flex min-h-0 min-w-0 flex-col md:flex-none md:self-stretch"
               style={{ '--artifact-workspace-width': `${previewWidth}%` } as CSSProperties}
             >
               <PreviewPanel
@@ -278,6 +283,7 @@ export function ChatScreen({
                 artifactMode={latestArtifactMode}
                 onValidationStateChange={(state) => {
                   setValidationPipeline({ artifactRunId, state });
+                  if (state !== 'pass') setApprovedArtifactRunId(undefined);
                   // pass 면 repair chain 종료 — 카운터 reset 후 새 chain 재개
                   // 가능. fail 은 사용자가 수정 버튼을 누를 수 있게 유지.
                   if (state === 'pass') setRepairChainAttempts(0);
@@ -305,6 +311,9 @@ export function ChatScreen({
                   send(repairRequest);
                 }}
                 canClose={Boolean(draftId)}
+                onApprovalChange={(approved) => {
+                  setApprovedArtifactRunId(approved ? artifactRunId : undefined);
+                }}
                 onClose={() => setClosedDraftId(draftId)}
               />
             </div>
@@ -355,17 +364,26 @@ function RunPipelineBar({
     status: PipelineStepStatus;
   }>;
 }) {
+  const currentStep =
+    [...steps].reverse().find((step) => step.status === 'active') ??
+    [...steps].reverse().find((step) => step.status === 'pass') ??
+    steps[0];
+  const currentLabel = currentStep ? PIPELINE_LABELS[currentStep.label] : '';
+
   return (
     <div
-      aria-label="Prompt to Artifact to Canvas to Validation to Repair to Approve"
-      className="flex flex-wrap items-center gap-v-50 border-b border-v-normal px-v-200 py-v-150"
+      aria-label="요청에서 승인까지 진행 상태"
+      className="flex flex-wrap items-center gap-v-100 border-b border-v-normal px-v-200 py-v-150"
     >
+      <span className="rounded-v-999 bg-v-primary-100 px-v-100 py-v-50 text-xs font-semibold text-v-primary">
+        현재: {currentLabel}
+      </span>
       {steps.map((step, index) => (
         <div key={step.label} className="flex items-center gap-v-50">
           <span
-            aria-label={`${step.label}: ${step.status}`}
+            aria-label={`${PIPELINE_LABELS[step.label]}: ${PIPELINE_STATUS_LABELS[step.status]}`}
             className={[
-              'rounded-v-200 border px-v-150 py-v-75 text-xs font-medium',
+              'rounded-v-200 border px-v-150 py-v-75 text-xs font-semibold',
               step.status === 'pass'
                 ? 'border-v-success bg-v-success-100 text-v-success'
                 : step.status === 'fail'
@@ -375,7 +393,7 @@ function RunPipelineBar({
                   : 'border-v-normal bg-v-canvas-200 text-v-hint',
             ].join(' ')}
           >
-            {step.label}
+            {PIPELINE_LABELS[step.label]}
           </span>
           {index < steps.length - 1 && (
             <span aria-hidden="true" className="text-v-hint">
@@ -387,6 +405,22 @@ function RunPipelineBar({
     </div>
   );
 }
+
+const PIPELINE_LABELS: Record<string, string> = {
+  Prompt: '요청',
+  Artifact: '생성',
+  Canvas: '미리보기',
+  Validation: '검증',
+  Repair: '수정',
+  Approve: '승인',
+};
+
+const PIPELINE_STATUS_LABELS: Record<PipelineStepStatus, string> = {
+  waiting: '대기',
+  active: '진행 중',
+  pass: '완료',
+  fail: '실패',
+};
 
 function createDefaultAgentClient(): AgentClient {
   if (import.meta.env.VITE_AGENT_CLIENT === 'mock') {

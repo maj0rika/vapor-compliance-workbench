@@ -2,10 +2,10 @@ import { ChatScreen } from '../../components/chat';
 import type { PromptModeOption } from '../../components/prompt';
 
 const MODE_OPTIONS: PromptModeOption[] = [
-  { id: 'component', label: 'Component', description: 'React + TSX 생성' },
-  { id: 'token-sync', label: 'Token Sync', description: 'Figma Variables 매핑' },
-  { id: 'a11y-audit', label: 'A11y Audit', description: 'Axe 기준 점검' },
-  { id: 'story-test', label: 'Story/Test', description: 'Storybook + Vitest' },
+  { id: 'component', label: '컴포넌트', description: 'React + TSX 생성' },
+  { id: 'token-sync', label: '토큰 동기화', description: 'Figma Variables 매핑' },
+  { id: 'a11y-audit', label: '접근성 점검', description: 'Axe 기준 점검' },
+  { id: 'story-test', label: '스토리/테스트', description: 'Storybook + Vitest' },
 ];
 
 const MAX_REFERENCE_FILE_SIZE = 300 * 1024;

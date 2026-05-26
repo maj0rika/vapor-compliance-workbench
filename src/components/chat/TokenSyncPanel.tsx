@@ -45,14 +45,14 @@ export function TokenSyncPanel({ figmaJson }: TokenSyncPanelProps) {
 
   const mapped = result.mappings.length;
   const total = mapped + result.unknowns.length;
-  const summary = `${total} variables · ${mapped} mapped · ${result.unknowns.length} unknown`;
+  const summary = `${total}개 변수 · ${mapped}개 매핑 · 미확인 ${result.unknowns.length}개`;
 
   return (
     <div className="flex flex-col gap-v-300" data-testid="token-sync-panel">
       {/* Header summary */}
       <div className="flex flex-wrap items-center gap-v-100 border-b border-v-normal pb-v-150">
         <Badge size="sm" colorPalette={result.unknowns.length === 0 ? 'success' : 'warning'}>
-          Token Sync
+          토큰 동기화
         </Badge>
         <Text typography="body4" foreground="hint-200" data-testid="token-sync-summary">
           {summary}
@@ -61,7 +61,7 @@ export function TokenSyncPanel({ figmaJson }: TokenSyncPanelProps) {
 
       {/* Mapping table */}
       <section className="flex flex-col gap-v-100">
-        <Text typography="subtitle2">Vapor token candidate</Text>
+        <Text typography="subtitle2">Vapor 토큰 후보</Text>
         <div
           className="overflow-x-auto rounded-v-200 border border-v-normal"
           data-testid="token-sync-mapping-table"
@@ -69,12 +69,12 @@ export function TokenSyncPanel({ figmaJson }: TokenSyncPanelProps) {
           <table className="w-full border-collapse text-left text-xs">
             <thead className="bg-v-canvas-200">
               <tr>
-                <Th>Figma name</Th>
-                <Th>category</Th>
-                <Th>raw</Th>
-                <Th>Vapor token</Th>
-                <Th>confidence</Th>
-                <Th>reason</Th>
+                <Th>Figma 이름</Th>
+                <Th>분류</Th>
+                <Th>원본 값</Th>
+                <Th>Vapor 토큰</Th>
+                <Th>신뢰도</Th>
+                <Th>근거</Th>
               </tr>
             </thead>
             <tbody>
@@ -117,7 +117,7 @@ export function TokenSyncPanel({ figmaJson }: TokenSyncPanelProps) {
       {result.unknowns.length > 0 && (
         <section className="flex flex-col gap-v-100" data-testid="token-sync-unknowns">
           <div className="flex items-center gap-v-100">
-            <Text typography="subtitle2">Unknown variables</Text>
+            <Text typography="subtitle2">미확인 변수</Text>
             <Badge size="sm" colorPalette="warning">
               {result.unknowns.length}
             </Badge>

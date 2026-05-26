@@ -78,7 +78,7 @@ test.describe('Live DeepSeek validation smoke', () => {
     }
 
     // 통과 시 Approve 버튼 enabled, 실패 시 disabled (G005 invariant 회귀 가드)
-    const approveBtn = page.getByRole('button', { name: '현재 artifact 로컬 승인' });
+    const approveBtn = page.getByRole('button', { name: '로컬 승인' });
     if (stateLabel?.includes('Pass')) {
       await expect(approveBtn).toBeEnabled();
     } else {
