@@ -373,6 +373,8 @@ function RunPipelineBar({
         <div key={step.label} className="flex items-center gap-v-50">
           <span
             aria-label={`${PIPELINE_LABELS[step.label]}: ${PIPELINE_STATUS_LABELS[step.status]}`}
+            data-testid={`pipeline-step-${step.label.toLowerCase()}`}
+            data-status={step.status}
             className={[
               'rounded-v-200 border px-v-150 py-v-75 text-xs font-semibold',
               step.status === 'pass'

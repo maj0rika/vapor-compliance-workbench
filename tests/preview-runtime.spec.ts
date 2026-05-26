@@ -1,6 +1,14 @@
 import { expect, test } from '@playwright/test';
+import { mockDeepSeekChat } from './fixtures/chat-mock';
 
 test.describe('artifact canvas runtime', () => {
+  test.beforeEach(async ({ page }) => {
+    // /api/deepseek/chat 를 deterministic SSE 로 가로채 DEEPSEEK_API_KEY
+    // 없이도 fixture 흐름이 실행된다. /api/deepseek/validate 는 실 로컬
+    // runner.
+    await mockDeepSeekChat(page);
+  });
+
   test('renders the generated component inside a sandboxed canvas frame', async ({
     page,
   }) => {
@@ -15,21 +23,21 @@ test.describe('artifact canvas runtime', () => {
       .fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toBeVisible({
+    await expect(page.getByRole('tab', { name: '미리보기' })).toBeVisible({
       timeout: 6000,
     });
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: '미리보기' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
-    await expect(page.locator('[aria-label="Artifact: pass"]')).toBeVisible();
-    await expect(page.locator('[aria-label="Canvas: pass"]')).toBeVisible();
+    await expect(page.locator('[aria-label="산출물: 완료"]')).toBeVisible();
+    await expect(page.locator('[aria-label="미리보기: 완료"]')).toBeVisible();
     await expect(page.locator('[aria-label="검증: 대기"]')).toBeVisible();
-    await expect(page.getByText('Metadata contract: PASS')).toBeVisible();
-    await expect(page.locator('[aria-label="Canvas runtime: ready"]')).toBeVisible();
+    await expect(page.getByText('메타데이터: 통과')).toBeVisible();
+    await expect(page.locator('[aria-label="미리보기 런타임: 준비됨"]')).toBeVisible();
 
-    const canvas = page.frameLocator('iframe[title="Generated artifact canvas"]');
-    const canvasFrame = page.locator('iframe[title="Generated artifact canvas"]');
+    const canvas = page.frameLocator('iframe[title="생성물 Canvas 미리보기"]');
+    const canvasFrame = page.locator('iframe[title="생성물 Canvas 미리보기"]');
     await expect(canvasFrame).toHaveAttribute('src', /\/api\/deepseek\/preview/);
     await expect(canvasFrame).toHaveAttribute('sandbox', 'allow-scripts allow-same-origin');
     const canvasSrc = await canvasFrame.getAttribute('src');
@@ -47,17 +55,17 @@ test.describe('artifact canvas runtime', () => {
       .fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toBeVisible({
+    await expect(page.getByRole('tab', { name: '미리보기' })).toBeVisible({
       timeout: 6000,
     });
-    await page.getByRole('button', { name: 'Disabled variant' }).click();
+    await page.getByRole('button', { name: 'Disabled 상태' }).click();
 
-    const canvas = page.frameLocator('iframe[title="Generated artifact canvas"]');
+    const canvas = page.frameLocator('iframe[title="생성물 Canvas 미리보기"]');
     await expect(
       canvas.getByRole('button', { name: 'Deploy component' }),
     ).toBeDisabled();
 
-    await page.getByRole('button', { name: 'Dark theme' }).click();
+    await page.getByRole('button', { name: '다크 테마' }).click();
     await expect(canvas.locator('body')).toHaveAttribute('data-theme', 'dark');
   });
 
@@ -168,7 +176,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Typecheck: FAIL$/ }),
     ).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText('Typecheck output')).toBeVisible();
+    await expect(page.getByRole('button', { name: '타입 검사 출력' })).toBeVisible();
     await expect(page.getByText(/TypecheckFailButton\.tsx/)).toBeVisible();
     await expect(page.getByRole('button', { name: '실패 로그 복사' })).toBeVisible();
   });
@@ -179,7 +187,7 @@ test.describe('artifact canvas runtime', () => {
       .getByLabel('자동화 프롬프트 입력')
       .fill('runtime fail component fixture');
     await page.getByRole('button', { name: '자동화 실행' }).click();
-    await expect(page.locator('[aria-label="Canvas runtime: failed"]')).toBeVisible({
+    await expect(page.locator('[aria-label="미리보기 런타임: 실패"]')).toBeVisible({
       timeout: 8000,
     });
 
@@ -198,7 +206,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Runtime Render: FAIL$/ }),
     ).toBeVisible();
-    await expect(page.getByText('Runtime Render output')).toBeVisible();
+    await expect(page.getByRole('button', { name: '런타임 렌더 출력' })).toBeVisible();
     await expect(
       page.locator('code').filter({ hasText: /runtime render fixture failure/ }),
     ).toHaveCount(2);
@@ -211,19 +219,19 @@ test.describe('artifact canvas runtime', () => {
       .fill('wrong primaryExport metadata mismatch fixture');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByText('Metadata contract: FAIL')).toBeVisible({
+    await expect(page.getByText('메타데이터: 실패')).toBeVisible({
       timeout: 6000,
     });
     await expect(page.getByText(/primaryExport "MissingActionButton"/)).toBeVisible();
     await expect(page.getByText('Canvas 사용 불가')).toBeVisible();
-    await expect(page.locator('iframe[title="Generated artifact canvas"]')).toHaveCount(0);
+    await expect(page.locator('iframe[title="생성물 Canvas 미리보기"]')).toHaveCount(0);
 
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
-    await expect(page.getByText(/Metadata contract: FAIL/).first()).toBeVisible();
+    await expect(page.getByText(/메타데이터: 실패/).first()).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Runtime Render: FAIL$/ }),
     ).toBeVisible({ timeout: 10000 });
@@ -254,7 +262,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Axe: FAIL$/ }),
     ).toBeVisible();
-    await expect(page.getByText('Axe output')).toBeVisible();
+    await expect(page.getByRole('button', { name: '접근성 출력' })).toBeVisible();
     await expect(page.getByText(/image-alt|Images must have alternate text/)).toBeVisible();
   });
 
@@ -281,7 +289,7 @@ test.describe('artifact canvas runtime', () => {
     await expect(page.getByText(/실패한 validation 결과를 바탕으로 수정/)).toBeVisible();
     await expect(
       page
-        .frameLocator('iframe[title="Generated artifact canvas"]')
+        .frameLocator('iframe[title="생성물 Canvas 미리보기"]')
         .getByRole('button', { name: 'Deploy component' }),
     ).toBeVisible({ timeout: 6000 });
 
@@ -315,19 +323,19 @@ test.describe('artifact canvas runtime', () => {
     await page.getByLabel('자동화 프롬프트 입력').fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toBeVisible({ timeout: 6000 });
+    await expect(page.getByRole('tab', { name: '미리보기' })).toBeVisible({ timeout: 6000 });
 
     // Advance clock past the 8-second timeout
     await page.clock.fastForward(8500);
 
-    await expect(page.locator('[aria-label="Canvas runtime: timeout"]')).toBeVisible({
+    await expect(page.locator('[aria-label="미리보기 런타임: 지연"]')).toBeVisible({
       timeout: 3000,
     });
     await expect(
       page.getByText('Canvas 런타임 응답 없음'),
     ).toBeVisible();
     // Must NOT appear as failed
-    await expect(page.locator('[aria-label="Canvas runtime: failed"]')).not.toBeVisible();
+    await expect(page.locator('[aria-label="미리보기 런타임: 실패"]')).not.toBeVisible();
   });
 
   test('preview endpoint 500 응답은 Canvas failed 상태로 표시된다', async ({ page }) => {
@@ -343,12 +351,12 @@ test.describe('artifact canvas runtime', () => {
     await page.getByLabel('자동화 프롬프트 입력').fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toBeVisible({ timeout: 6000 });
-    await expect(page.locator('[aria-label="Canvas runtime: failed"]')).toBeVisible({
+    await expect(page.getByRole('tab', { name: '미리보기' })).toBeVisible({ timeout: 6000 });
+    await expect(page.locator('[aria-label="미리보기 런타임: 실패"]')).toBeVisible({
       timeout: 3000,
     });
     await expect(page.getByText(/Preview endpoint failed \(500\)/)).toBeVisible();
     // Must NOT appear as timeout
-    await expect(page.locator('[aria-label="Canvas runtime: timeout"]')).not.toBeVisible();
+    await expect(page.locator('[aria-label="미리보기 런타임: 지연"]')).not.toBeVisible();
   });
 });

@@ -290,6 +290,7 @@ export function PreviewPanel({
               colorPalette="primary"
               title="생성물이 실제로 빌드되고 테스트되는지 확인합니다."
               disabled={validationStatus === 'running'}
+              data-testid="workspace-action-validate"
               onClick={handleRunValidation}
             >
               {validationStatus === 'running' ? '검증 중' : '검증 실행'}
@@ -309,7 +310,7 @@ export function PreviewPanel({
                       maxRepairAttemptsPerChain - repairChainAttempts,
                     )}회`
               }
-              data-testid="repair-action"
+              data-testid="workspace-action-repair"
               onClick={() =>
                 canRepair &&
                 onRepair?.({
@@ -327,6 +328,7 @@ export function PreviewPanel({
               size="sm"
               variant="ghost"
               colorPalette="danger"
+              data-testid="workspace-action-copy-failure"
               onClick={handleCopyFailureOutput}
             >
               실패 로그 복사
@@ -337,6 +339,7 @@ export function PreviewPanel({
               size="sm"
               colorPalette="success"
               title="검증을 통과한 생성물을 로컬 리뷰에서 승인합니다."
+              data-testid="workspace-action-approve"
               onClick={() => {
                 setApproved(true);
                 onApprovalChange?.(true);

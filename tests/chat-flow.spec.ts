@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { mockDeepSeekChat } from './fixtures/chat-mock';
 
 function makeTempFile(name: string, content = 'sample'): string {
   const dir = mkdtempSync(join(tmpdir(), 'vapor-e2e-'));
@@ -11,13 +12,18 @@ function makeTempFile(name: string, content = 'sample'): string {
 }
 
 test.describe('Vapor DS automation flow', () => {
-  test.beforeEach(async ({ context }) => {
+  test.beforeEach(async ({ context, page }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    // /api/deepseek/chat 만 deterministic 으로 가로채 DEEPSEEK_API_KEY 없이도
+    // 실행 가능하게 한다. 검증 endpoint 는 실 로컬 runner 그대로 사용한다.
+    await mockDeepSeekChat(page);
   });
 
   test('empty state template loads a deterministic fixture', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Vapor 디자인시스템 자동화 워크벤치' }),
+    ).toBeVisible();
 
     await page.getByRole('button', { name: '기본 버튼' }).click();
 
@@ -44,17 +50,22 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible();
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: '미리보기' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
     await expect(
       page
-        .frameLocator('iframe[title="Generated artifact canvas"]')
+        .frameLocator('iframe[title="생성물 Canvas 미리보기"]')
         .getByRole('button', { name: 'Deploy component' }),
     ).toBeVisible();
     await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('PrimaryActionButton');
+    // 검증 탭은 runner 가 실행된 뒤에만 노출된다 (UI 안정화 contract).
+    await page.getByTestId('workspace-action-validate').click();
+    await expect(page.getByRole('tab', { name: '검증' })).toBeVisible({
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Typecheck: PASS');
     await expect(workspace).toContainText('Vapor token usage: PASS');
@@ -152,6 +163,11 @@ test.describe('Vapor DS automation flow', () => {
     await expect(workspace).toBeVisible({ timeout: 6000 });
     await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('figmaToVaporTokenMap');
+    await page.getByTestId('workspace-action-validate').click();
+    // 검증 탭은 결과가 떨어지면 노출된다 — pass/warn/fail 어느 것이든 OK.
+    await expect(page.getByRole('tab', { name: '검증' })).toBeVisible({
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
@@ -159,7 +175,7 @@ test.describe('Vapor DS automation flow', () => {
   test('a11y audit mode reviews an attached TSX component', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('자동화 모드 선택').click();
-    await page.getByRole('option', { name: 'A11y Audit' }).click();
+    await page.getByRole('option', { name: '접근성 점검' }).click();
     await page
       .locator('input[type="file"]')
       .setInputFiles(makeTempFile('Button.tsx', 'export function Button(){return <button>Save</button>}'));
@@ -170,6 +186,10 @@ test.describe('Vapor DS automation flow', () => {
     await expect(workspace).toBeVisible({ timeout: 6000 });
     await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('AccessibleAttachButton');
+    await page.getByTestId('workspace-action-validate').click();
+    await expect(page.getByRole('tab', { name: '검증' })).toBeVisible({
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Axe: PASS');
   });

@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { mockDeepSeekChat } from './fixtures/chat-mock';
 
 /**
  * Repair loop E2E tests.
@@ -11,6 +12,10 @@ import { expect, test } from '@playwright/test';
  *   4. The repaired artifact streams in and the workspace updates.
  */
 test.describe('repair-context', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockDeepSeekChat(page);
+  });
+
   test('Fix with Agent enabled after validation FAIL and sends repair context', async ({
     page,
   }) => {

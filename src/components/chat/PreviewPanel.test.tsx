@@ -511,7 +511,7 @@ describe('PreviewPanel', () => {
       await waitFor(() =>
         expect(screen.getByRole('button', { name: /실패 수정/ })).toBeEnabled(),
       );
-      expect(screen.getByTestId('repair-action')).toHaveAttribute('title', expect.stringContaining('남은 수정 2회'));
+      expect(screen.getByTestId('workspace-action-repair')).toHaveAttribute('title', expect.stringContaining('남은 수정 2회'));
       fireEvent.click(screen.getByRole('button', { name: /실패 수정/ }));
       expect(onRepair).toHaveBeenCalledTimes(1);
     });
@@ -532,7 +532,7 @@ describe('PreviewPanel', () => {
       await waitFor(() =>
         expect(screen.getByRole('button', { name: /실패 수정/ })).toBeDisabled(),
       );
-      expect(screen.getByTestId('repair-action')).toHaveAttribute(
+      expect(screen.getByTestId('workspace-action-repair')).toHaveAttribute(
         'title',
         expect.stringContaining('최대 수정 횟수 초과 (3/3)'),
       );

@@ -9,7 +9,9 @@ test.describe('template-reset', () => {
     page,
   }) => {
     await page.goto('/');
-    await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Vapor 디자인시스템 자동화 워크벤치' }),
+    ).toBeVisible();
 
     // 첫 번째 템플릿 선택
     await page.getByRole('button', { name: '기본 버튼' }).click();
@@ -23,7 +25,9 @@ test.describe('template-reset', () => {
 
     // 다시 선택 → EmptyState 로 복귀
     await resetButton.click();
-    await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Vapor 디자인시스템 자동화 워크벤치' }),
+    ).toBeVisible();
 
     // 다른 템플릿 선택 가능 — 데이터 테이블 로딩 확인
     await page.getByRole('button', { name: '데이터 테이블' }).click();
