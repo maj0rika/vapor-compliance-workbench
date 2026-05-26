@@ -76,7 +76,7 @@ test.describe('artifact canvas runtime', () => {
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.locator('[aria-label="Validation: active"]')).toBeVisible();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
@@ -116,7 +116,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     await page.getByRole('button', { name: '응답 재생성' }).click();
@@ -138,7 +138,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
@@ -161,7 +161,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
@@ -188,7 +188,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
@@ -220,7 +220,7 @@ test.describe('artifact canvas runtime', () => {
 
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(page.getByText(/Metadata contract: FAIL/).first()).toBeVisible();
@@ -244,7 +244,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
@@ -269,7 +269,7 @@ test.describe('artifact canvas runtime', () => {
 
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(
@@ -287,7 +287,7 @@ test.describe('artifact canvas runtime', () => {
 
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(

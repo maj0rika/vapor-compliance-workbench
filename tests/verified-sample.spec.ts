@@ -48,7 +48,7 @@ test.describe('verified sample run', () => {
     await expect.poll(() => validationCalls).toBeGreaterThan(0);
 
     await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(

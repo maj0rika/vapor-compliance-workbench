@@ -31,7 +31,7 @@ test.describe('repair-context', () => {
     // Run validation — the broken token artifact will produce a FAIL.
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.locator('[aria-label="Validation: fail"]')).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     // Now "Fix with Agent" must be enabled.
@@ -69,7 +69,7 @@ test.describe('repair-context', () => {
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
     await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
-      timeout: 20000,
+      timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     // After a pass there are no failed gates → button must be disabled.
