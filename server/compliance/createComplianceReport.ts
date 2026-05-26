@@ -1,4 +1,5 @@
 import type { ComplianceReport } from '../../src/compliance/types.ts';
+import type { ESLintMessage } from '../../src/compliance/rules/accessibilityRules.ts';
 import { aggregateGates } from '../../src/compliance/report.ts';
 import { checkOverflow } from '../../src/compliance/rules/layoutRules.ts';
 import { checkVaporComponents } from '../../src/compliance/rules/vaporComponentRules.ts';
@@ -8,16 +9,24 @@ import { checkResponsive } from '../../src/compliance/rules/responsiveRules.ts';
 import { checkDocumentation } from '../../src/compliance/rules/documentationRules.ts';
 import type { FileSignals } from './collectFileSignals.ts';
 
+export type ReportInputs = {
+  /** ESLint jsx-a11y messages, or undefined to skip accessibility gate. */
+  eslintMessages?: ESLintMessage[];
+};
+
 /**
  * Assembles a full ComplianceReport from collected file signals.
  * All gates run deterministically from the same input.
  */
-export function createComplianceReport(signals: FileSignals): ComplianceReport {
+export function createComplianceReport(
+  signals: FileSignals,
+  inputs: ReportInputs = {},
+): ComplianceReport {
   const gates = [
     checkOverflow({}),
     checkVaporComponents({ source: signals.combinedSource }),
     checkTokens({ source: signals.combinedSource }),
-    checkAccessibility({}),
+    checkAccessibility({ eslintMessages: inputs.eslintMessages }),
     checkResponsive({}),
     checkDocumentation({
       readmeContent: signals.readmeContent,

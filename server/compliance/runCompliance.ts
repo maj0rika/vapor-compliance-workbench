@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
-import { collectFileSignals, type ScanScope } from './collectFileSignals.ts';
+import { collectFileSignals, GOVERNED_SCAN_PATHS, type ScanScope } from './collectFileSignals.ts';
 import { createComplianceReport } from './createComplianceReport.ts';
+import { runEslintJson } from './runEslint.ts';
 
 /**
  * Node-runnable entry point for the compliance engine.
@@ -21,7 +22,18 @@ const projectRoot = resolve(positional[0] ?? process.cwd());
 const scope: ScanScope = governed ? 'governed' : 'all';
 
 const signals = collectFileSignals(projectRoot, { scope });
-const report = createComplianceReport(signals);
+
+let eslintMessages;
+try {
+  const paths = scope === 'governed' ? GOVERNED_SCAN_PATHS : ['src/'];
+  eslintMessages = await runEslintJson(paths);
+} catch (err) {
+  process.stderr.write(
+    `[compliance] ESLint scan failed: ${err instanceof Error ? err.message : err}\n`,
+  );
+}
+
+const report = createComplianceReport(signals, { eslintMessages });
 
 process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 
