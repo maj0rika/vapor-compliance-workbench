@@ -21,10 +21,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node 20 + npm cache
+      # 모든 verify:* script 가 `node server/.../foo.ts` 로 .ts 를 직접
+      # 실행한다. Node 22.6+ 는 `--experimental-strip-types`, Node 24+ 는
+      # 기본값으로 TS 를 strip 하므로 24 를 고정. Node 20 은 .ts 파일에서
+      # ERR_UNKNOWN_FILE_EXTENSION 으로 실패하므로 절대 사용 금지.
+      - name: Setup Node 24 + npm cache
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies
