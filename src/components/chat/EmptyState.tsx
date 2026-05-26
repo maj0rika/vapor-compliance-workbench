@@ -117,18 +117,26 @@ export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
 
             <div className="grid gap-v-100 sm:grid-cols-2">
               {TEMPLATES.map((template) => (
-                <Button
+                <button
                   key={template.label}
-                  size="md"
-                  variant="outline"
+                  type="button"
                   onClick={() => onPick(template.templateKey)}
+                  className="flex min-w-0 flex-col items-start gap-v-50 rounded-v-300 border border-v-normal bg-v-canvas-100 p-v-200 text-left transition-colors hover:border-v-primary hover:bg-v-primary-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-v-primary"
                 >
-                  <span className="flex min-w-0 flex-col items-start gap-v-50 text-left">
-                    <span>{template.label}</span>
-                    <span className="text-xs font-normal text-v-hint">{template.output}</span>
-                    <span className="text-xs font-normal text-v-hint">{template.gates}</span>
+                  <span className="text-sm font-medium">{template.label}</span>
+                  <span
+                    className="text-xs"
+                    style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
+                  >
+                    {template.output}
                   </span>
-                </Button>
+                  <span
+                    className="text-xs"
+                    style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
+                  >
+                    {template.gates}
+                  </span>
+                </button>
               ))}
             </div>
           </div>
