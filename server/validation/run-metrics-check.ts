@@ -320,6 +320,31 @@ async function run(): Promise<void> {
     'timeoutMs = 30_000 default 또는 timeout 테스트 누락',
   );
 
+  // V07: Vapor `--vapor-size-space-*` 토큰이 실 paint 에서 nonzero 픽셀로
+  // resolve 되는 것을 회귀 보장. Vapor 토큰은 `calc(var(--vapor-scale-factor)
+  // * Npx)` 로 정의되므로 scale-factor 가 어떤 경로로도 set 되지 않으면
+  // gap-v-100/p-v-200 등 모든 spacing 이 silent 0-pixel 회귀를 일으킨다.
+  // E2E 가 실제 브라우저에서 임시 element 의 padding 을 측정하므로
+  // CSS 빌드만 통과하고 paint 가 죽는 케이스를 잡는다. 정적 가드는 그
+  // 테스트 파일이 사라지지 않도록 한다.
+  let spacingTokenSpecSrc = '';
+  try {
+    spacingTokenSpecSrc = await readFile(
+      join(ROOT, 'tests/vapor-spacing-tokens.spec.ts'),
+      'utf8',
+    );
+  } catch {
+    spacingTokenSpecSrc = '';
+  }
+  record(
+    /--vapor-size-space-100/.test(spacingTokenSpecSrc) &&
+      /paddingTop/.test(spacingTokenSpecSrc) &&
+      /toBeGreaterThan\(0\)/.test(spacingTokenSpecSrc),
+    'V07',
+    'Vapor spacing 토큰 paint 회귀 E2E 가드',
+    'tests/vapor-spacing-tokens.spec.ts 누락 또는 paint assertion 누락',
+  );
+
   // Summary
   const passed = verdicts.filter((v) => v.status === 'pass').length;
   const failed = verdicts.filter((v) => v.status === 'fail');

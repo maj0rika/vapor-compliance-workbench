@@ -77,6 +77,7 @@
 | V04 | 생성물 token gate (raw color) | `npm run verify:generated` 결과 token detail | rawColorCount 0 | PASS (fixture) |
 | V05 | 생성물 token gate (hsl/oklch/named) | `npm test -- tokenUsage` | hsl/oklch/named color 감지, false negative 0 | PASS (G019) |
 | V06 | ESLint 경계 위반 | `npm run lint` | 0건 (Vapor/agent boundary 강제) | PASS |
+| V07 | Vapor spacing 토큰 paint | `tests/vapor-spacing-tokens.spec.ts` (E2E 실 브라우저 paint) | `--vapor-size-space-100` 적용 시 paddingTop > 0px (scale-factor 어떤 경로로든 set) | PASS (G036) |
 
 ### Operational Robustness
 
@@ -95,7 +96,7 @@
 | P01 | first token | live smoke timing | <= 3s | (수동 smoke) |
 | P02 | artifact parse | `npm test -- responseParser.perf` | <= 100ms avg / 10 iter | PASS (G034; large fixture <3ms) |
 | P03 | temp workspace validation | `verify:generated` 총 duration | <= 15s | PASS (~5s fixture) |
-| P04 | validation 30s hard timeout | `runCommand.ts` 의 `timeoutMs = 30_000` 기본값 + `runCommand.test.ts` timeout 분기 PASS | 30s default 적용 + 타임아웃 exit code 124 검증 PASS | PASS (G034) |
+| P04 | validation 30s hard timeout | `runCommand.ts` 의 `timeoutMs = 30_000` 기본값 + `runCommand.test.ts` timeout 분기 PASS | 30s default 적용 + 타임아웃 exit code 124 검증 PASS | PASS (G035) |
 | P05 | Initial JS gzip | C07 동일 | <= 200KB | PASS (199.63KB) |
 
 ### Accessibility
@@ -115,7 +116,7 @@ PASS  : C01 C02 C03 C04 C05 C06 C07 C08
         S01 S02 S03 S04 S05
         T01 T02 T03 T04
         U01 U02 U03 U04 U05 U06 U07
-        V01 V02 V03 V04 V05 V06
+        V01 V02 V03 V04 V05 V06 V07
         O01 O02 O03 O04 O05
         P02 P03 P04 P05
         A01 A02 A03 A04 A05
@@ -124,7 +125,7 @@ TODO  : P01 (first token live smoke — DeepSeek live API 필요; CI 에서는
         측정 불가, 수동 smoke 로 대체)
 ```
 
-총 PASS: 41 / FAIL: 0 / 측정 보류: 1
+총 PASS: 42 / FAIL: 0 / 측정 보류: 1
 
 ## 4. FAIL → PASS 전환 이력 (G017–G027)
 
