@@ -135,6 +135,21 @@ export function artifactToMarkdown(artifact: GeneratedArtifact): string {
   return sections.join('\n\n');
 }
 
+/**
+ * <artifact-meta> 본문에서 markdown code fence 를 제거한다.
+ *
+ * DeepSeek (특히 보수 응답) 가 `<artifact-meta>` 안에 ```json ... ``` 으로
+ * JSON 을 감싸서 emit 하는 경우가 관측됨. JSON.parse 가 백틱 토큰에서
+ * 즉시 실패해 메타데이터 계약이 깨지고 Canvas 가 마운트되지 않는다.
+ * 코드 펜스가 있을 때만 안쪽 본문을 사용하고, 없으면 원본을 그대로
+ * 돌려주어 기존 deterministic fixture 와 호환 유지.
+ */
+function stripJsonCodeFence(raw: string): string {
+  const trimmed = raw.trim();
+  const fence = trimmed.match(/^```(?:json|json5)?\s*\n([\s\S]*?)\n?```$/i);
+  return fence ? fence[1].trim() : trimmed;
+}
+
 function parseArtifactMetadata(markdown: string): {
   metadata?: ArtifactMetadata;
   rawMetadata?: string;
@@ -142,7 +157,7 @@ function parseArtifactMetadata(markdown: string): {
 } {
   const match = markdown.match(META_RE);
   if (!match) return {};
-  const rawMetadata = match[1];
+  const rawMetadata = stripJsonCodeFence(match[1]);
 
   try {
     const raw = JSON.parse(rawMetadata) as unknown;
