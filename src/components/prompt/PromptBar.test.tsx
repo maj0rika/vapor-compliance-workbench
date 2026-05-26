@@ -4,9 +4,9 @@ import { PromptBar } from './PromptBar';
 
 const MODE_OPTIONS = [
   { id: 'component', label: 'Component' },
-  { id: 'token-sync', label: 'Token Sync' },
+  { id: 'token-sync', label: '토큰 동기화' },
   { id: 'a11y-audit', label: 'A11y Audit' },
-  { id: 'story-test', label: 'Story/Test' },
+  { id: 'story-test', label: '스토리/테스트' },
 ];
 
 describe('PromptBar', () => {

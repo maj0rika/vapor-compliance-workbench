@@ -12,8 +12,8 @@ test.describe('template-reset', () => {
     await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
 
     // 첫 번째 템플릿 선택
-    await page.getByRole('button', { name: 'Primary Button' }).click();
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
+    await page.getByRole('button', { name: '기본 버튼' }).click();
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({
       timeout: 6000,
     });
 
@@ -25,13 +25,13 @@ test.describe('template-reset', () => {
     await resetButton.click();
     await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
 
-    // 다른 템플릿 선택 가능 — Data Table 로딩 확인
-    await page.getByRole('button', { name: 'Data Table' }).click();
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
+    // 다른 템플릿 선택 가능 — 데이터 테이블 로딩 확인
+    await page.getByRole('button', { name: '데이터 테이블' }).click();
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({
       timeout: 6000,
     });
     const workspace = page.getByLabel('생성물 워크스페이스');
-    await page.getByRole('tab', { name: 'Component' }).click();
+    await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('export function DataTable');
   });
 });

@@ -29,15 +29,15 @@ describe('TokenSyncPanel (G013.1)', () => {
     expect(screen.getByTestId('token-sync-row-corner/md')).toBeInTheDocument();
   });
 
-  it('summary 가 total/mapped/unknown 을 표시', () => {
+  it('summary 가 전체/매핑/미확인 개수를 표시', () => {
     render(<TokenSyncPanel figmaJson={SAMPLE_JSON} />);
-    // 4 variables, 3 mapped (color/spacing/radius), 1 unknown (STRING)
+    // 4개 변수, 3개 매핑(color/spacing/radius), 1개 미확인(STRING)
     expect(screen.getByTestId('token-sync-summary')).toHaveTextContent(
-      '4 variables · 3 mapped · 1 unknown',
+      '4개 변수 · 3개 매핑 · 미확인 1개',
     );
   });
 
-  it('unknown variables 섹션 노출', () => {
+  it('미확인 변수 섹션 노출', () => {
     render(<TokenSyncPanel figmaJson={SAMPLE_JSON} />);
     const unknowns = screen.getByTestId('token-sync-unknowns');
     expect(unknowns).toBeInTheDocument();

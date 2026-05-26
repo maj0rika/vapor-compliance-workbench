@@ -83,7 +83,7 @@ test.describe('Live DeepSeek smoke', () => {
     //    Live DeepSeek 는 component 만 반환할 수도 있어 3개 모두 강요하지 않는다
     //    — empty workspace 회귀만 차단.
     const artifactTabCount = await Promise.all([
-      page.getByRole('tab', { name: 'Component' }).count(),
+      page.getByRole('tab', { name: '코드' }).count(),
       page.getByRole('tab', { name: 'Story' }).count(),
       page.getByRole('tab', { name: 'Test', exact: true }).count(),
     ]).then((counts) => counts.reduce((a, b) => a + b, 0));

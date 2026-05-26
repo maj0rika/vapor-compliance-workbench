@@ -26,20 +26,20 @@ test.describe('repair-context', () => {
 
     // "Fix with Agent" should be absent/disabled before validation result arrives.
     // (The button only renders after a validationResult is set.)
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '실패 수정' })).toHaveCount(0);
 
     // Run validation — the broken token artifact will produce a FAIL.
     await page.getByRole('button', { name: '검증 실행' }).click();
-    await expect(page.locator('[aria-label="Validation: fail"]')).toBeVisible({
+    await expect(page.locator('[aria-label="검증: 실패"]')).toBeVisible({
       timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     // Now "Fix with Agent" must be enabled.
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '실패 수정' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '실패 수정' })).toBeEnabled();
 
     // Click it — a new user message with the repair prompt must appear.
-    await page.getByRole('button', { name: '실패 수정 (Fix with Agent)' }).click();
+    await page.getByRole('button', { name: '실패 수정' }).click();
 
     // The new user bubble contains Korean repair context.
     const userBubbles = page.locator('[data-role="user"]');
@@ -68,12 +68,12 @@ test.describe('repair-context', () => {
       timeout: 6000,
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
-    await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
+    await expect(page.locator('[aria-label="검증: 완료"]')).toBeVisible({
       timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     // After a pass there are no failed gates → button must be disabled.
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '실패 수정 (Fix with Agent)' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '실패 수정' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '실패 수정' })).toBeDisabled();
   });
 });

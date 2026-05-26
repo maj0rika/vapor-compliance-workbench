@@ -28,11 +28,11 @@ export function createVerifiedSampleRun(): VerifiedSampleRun {
 
   return {
     request: {
-      text: 'Verified sample run: primary Vapor button component',
+      text: '검증 샘플 실행: Vapor 기본 버튼',
       mode: 'component',
     },
     assistantText:
-      'Deterministic sample artifact를 로드했습니다. DeepSeek 호출은 하지 않았고, parser, Canvas runtime, validation runner는 실제 생성물과 같은 경로를 사용합니다.',
+      '고정 샘플 산출물을 로드했습니다. API 호출 없이 실제 파서, Canvas 런타임, 검증 러너와 같은 경로로 확인합니다.',
     draft: artifactToMarkdown(artifact),
     artifactSource,
     artifactProvenance: 'deterministic-sample',
@@ -51,7 +51,7 @@ export function createTemplateSampleRun(templateKey: TemplateKey): VerifiedSampl
 
   return {
     request: {
-      text: `Template fixture: ${templateKey}`,
+      text: `예시 샘플 실행: ${templateKey}`,
       mode,
     },
     assistantText: script.reply,

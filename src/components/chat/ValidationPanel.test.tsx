@@ -42,7 +42,7 @@ describe('ValidationPanel', () => {
     vi.restoreAllMocks();
   });
 
-  it('6 pass detail 표시 시 전체 뱃지=pass + count="6 gates · 6 pass · 0 fail"', () => {
+  it('6 pass detail 표시 시 전체 뱃지=pass + count="6개 항목 중 6개 통과 · 0개 실패"', () => {
     render(
       <ValidationPanel
         result={makeResult({ status: 'pass', details: SIX_PASS_DETAILS })}
@@ -51,16 +51,17 @@ describe('ValidationPanel', () => {
     );
 
     // Overall pass badge
-    expect(screen.getByText('Pass')).toBeInTheDocument();
+    expect(screen.getByText('사용 가능')).toBeInTheDocument();
 
     // Summary count
-    expect(screen.getByText('6 gates · 6 pass · 0 fail')).toBeInTheDocument();
+    expect(screen.getByText('6개 항목 중 6개 통과 · 0개 실패')).toBeInTheDocument();
 
-    // Summary list items: one per gate (Label: STATUS format)
-    const summaryItems = screen
-      .getAllByRole('listitem')
-      .filter((el) => /^(Typecheck|Unit|Runtime Render|Axe|Vapor token usage|Cleanup): (PASS|FAIL|WARN)$/.test(el.textContent?.trim() ?? ''));
-    expect(summaryItems).toHaveLength(6);
+    expect(screen.getByTestId('validation-gate-typecheck')).toHaveTextContent('타입 검사');
+    expect(screen.getByTestId('validation-gate-unit')).toHaveTextContent('단위 테스트');
+    expect(screen.getByTestId('validation-gate-runtime-render')).toHaveTextContent('런타임 렌더');
+    expect(screen.getByTestId('validation-gate-axe')).toHaveTextContent('접근성');
+    expect(screen.getByTestId('validation-gate-vapor-token-usage')).toHaveTextContent('Vapor 토큰');
+    expect(screen.getByTestId('validation-gate-cleanup')).toHaveTextContent('정리');
   });
 
   it('1 fail detail 시 fix action 버튼 노출 + 클릭 시 onRepairGate(해당 label) 호출', () => {
@@ -98,7 +99,7 @@ describe('ValidationPanel', () => {
     expect(screen.queryByText(/Test output line 1/)).not.toBeInTheDocument();
 
     // Click disclosure button to open
-    const disclosureButton = screen.getByRole('button', { name: 'Unit output' });
+    const disclosureButton = screen.getByRole('button', { name: '단위 테스트 출력' });
     fireEvent.click(disclosureButton);
     expect(screen.getByText(/Test output line 1/)).toBeInTheDocument();
 
@@ -119,7 +120,7 @@ describe('ValidationPanel', () => {
     );
 
     // Open disclosure first (pass gate is collapsed by default)
-    fireEvent.click(screen.getByRole('button', { name: 'Axe output' }));
+    fireEvent.click(screen.getByRole('button', { name: '접근성 출력' }));
 
     // Click copy
     fireEvent.click(screen.getByRole('button', { name: '출력 복사' }));

@@ -19,10 +19,10 @@ test.describe('Vapor DS automation flow', () => {
     await page.goto('/');
     await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Primary Button' }).click();
+    await page.getByRole('button', { name: '기본 버튼' }).click();
 
     // Template click loads the deterministic fixture — no live DeepSeek call.
-    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
+    await expect(page.getByText('고정 샘플', { exact: true })).toBeVisible({ timeout: 6000 });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
   });
 
@@ -53,7 +53,7 @@ test.describe('Vapor DS automation flow', () => {
         .frameLocator('iframe[title="Generated artifact canvas"]')
         .getByRole('button', { name: 'Deploy component' }),
     ).toBeVisible();
-    await page.getByRole('tab', { name: 'Component' }).click();
+    await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('PrimaryActionButton');
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Typecheck: PASS');
@@ -141,7 +141,7 @@ test.describe('Vapor DS automation flow', () => {
   }) => {
     await page.goto('/');
     await page.getByLabel('자동화 모드 선택').click();
-    await page.getByRole('option', { name: 'Token Sync' }).click();
+    await page.getByRole('option', { name: '토큰 동기화' }).click();
     await page
       .locator('input[type="file"]')
       .setInputFiles(makeTempFile('figma-variables.json', '{"Primary/500":"#2563eb"}'));
@@ -150,7 +150,7 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible({ timeout: 6000 });
-    await page.getByRole('tab', { name: 'Component' }).click();
+    await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('figmaToVaporTokenMap');
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Vapor token usage: PASS');
@@ -168,7 +168,7 @@ test.describe('Vapor DS automation flow', () => {
 
     const workspace = page.getByLabel('생성물 워크스페이스');
     await expect(workspace).toBeVisible({ timeout: 6000 });
-    await page.getByRole('tab', { name: 'Component' }).click();
+    await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('AccessibleAttachButton');
     await page.getByRole('tab', { name: '검증' }).click();
     await expect(workspace).toContainText('Axe: PASS');
@@ -201,12 +201,12 @@ test.describe('Vapor DS automation flow', () => {
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
     const workspace = page.getByLabel('생성물 워크스페이스');
-    await expect(page.getByRole('tab', { name: 'Component' })).toBeVisible({
+    await expect(page.getByRole('tab', { name: '코드' })).toBeVisible({
       timeout: 6000,
     });
-    await page.getByRole('tab', { name: 'Component' }).click();
+    await page.getByRole('tab', { name: '코드' }).click();
     await expect(workspace).toContainText('PrimaryActionButton');
-    await page.getByRole('button', { name: 'Component 복사' }).click();
+    await page.getByRole('button', { name: '코드 복사' }).click();
 
     await expect
       .poll(() => page.evaluate(() => navigator.clipboard.readText()))

@@ -45,10 +45,10 @@ export type PromptBarProps = {
 };
 
 const DEFAULT_MODE_OPTIONS: PromptModeOption[] = [
-  { id: 'component', label: 'Component', description: 'React 컴포넌트 생성' },
-  { id: 'token-sync', label: 'Token Sync', description: 'Figma Variables 매핑' },
-  { id: 'a11y-audit', label: 'A11y Audit', description: '접근성 결함 탐지' },
-  { id: 'story-test', label: 'Story/Test', description: '스토리와 테스트 작성' },
+  { id: 'component', label: '컴포넌트', description: 'React 컴포넌트 생성' },
+  { id: 'token-sync', label: '토큰 동기화', description: 'Figma Variables 매핑' },
+  { id: 'a11y-audit', label: '접근성 점검', description: '접근성 결함 탐지' },
+  { id: 'story-test', label: '스토리/테스트', description: '스토리와 테스트 작성' },
 ];
 
 const ATTACHMENT_TEXT_LIMIT = 16_000;

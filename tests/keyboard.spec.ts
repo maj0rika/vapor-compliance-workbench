@@ -20,10 +20,10 @@ test.describe('automation composer keyboard behavior', () => {
     await page.goto('/');
 
     await page.getByLabel('자동화 모드 선택').click();
-    await expect(page.getByRole('option', { name: 'Component' })).toBeVisible();
+    await expect(page.getByRole('option', { name: '컴포넌트' })).toBeVisible();
 
     await page.keyboard.press('Escape');
-    await expect(page.getByRole('option', { name: 'Component' })).toBeHidden();
+    await expect(page.getByRole('option', { name: '컴포넌트' })).toBeHidden();
   });
 
   test('keyboard opens the inline file chooser', async ({ page }) => {

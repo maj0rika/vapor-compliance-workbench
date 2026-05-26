@@ -24,7 +24,7 @@ test.describe('artifact canvas runtime', () => {
     );
     await expect(page.locator('[aria-label="Artifact: pass"]')).toBeVisible();
     await expect(page.locator('[aria-label="Canvas: pass"]')).toBeVisible();
-    await expect(page.locator('[aria-label="Validation: waiting"]')).toBeVisible();
+    await expect(page.locator('[aria-label="검증: 대기"]')).toBeVisible();
     await expect(page.getByText('Metadata contract: PASS')).toBeVisible();
     await expect(page.locator('[aria-label="Canvas runtime: ready"]')).toBeVisible();
 
@@ -74,13 +74,13 @@ test.describe('artifact canvas runtime', () => {
       timeout: 6000,
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
-    await expect(page.locator('[aria-label="Validation: active"]')).toBeVisible();
+    await expect(page.locator('[aria-label="검증: 진행 중"]')).toBeVisible();
     await expect(page.getByRole('button', { name: '검증 실행' })).toBeVisible({
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
-    await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible();
+    await expect(page.locator('[aria-label="검증: 완료"]')).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Typecheck: PASS$/ }),
     ).toBeVisible({ timeout: 8000 });
@@ -115,15 +115,15 @@ test.describe('artifact canvas runtime', () => {
       timeout: 6000,
     });
     await page.getByRole('button', { name: '검증 실행' }).click();
-    await expect(page.locator('[aria-label="Validation: pass"]')).toBeVisible({
+    await expect(page.locator('[aria-label="검증: 완료"]')).toBeVisible({
       timeout: process.env.CI ? 60_000 : 20_000,
     });
 
     await page.getByRole('button', { name: '응답 재생성' }).click();
-    await expect(page.locator('[aria-label="Validation: waiting"]')).toBeVisible({
+    await expect(page.locator('[aria-label="검증: 대기"]')).toBeVisible({
       timeout: 6000,
     });
-    await expect(page.locator('[aria-label="Validation: pass"]')).toHaveCount(0);
+    await expect(page.locator('[aria-label="검증: 완료"]')).toHaveCount(0);
   });
 
   test('shows clear fail states when generated code is broken', async ({ page }) => {
@@ -142,7 +142,7 @@ test.describe('artifact canvas runtime', () => {
     });
     await page.getByRole('tab', { name: '검증' }).click();
 
-    await expect(page.locator('[aria-label="Validation: fail"]')).toBeVisible();
+    await expect(page.locator('[aria-label="검증: 실패"]')).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Vapor token usage: FAIL$/ }),
     ).toBeVisible({ timeout: 8000 });
@@ -275,9 +275,9 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Vapor token usage: FAIL$/ }),
     ).toBeVisible({ timeout: 8000 });
-    await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: '로컬 승인' })).toBeDisabled();
 
-    await page.getByRole('button', { name: '실패 수정 (Fix with Agent)' }).click();
+    await page.getByRole('button', { name: '실패 수정' }).click();
     await expect(page.getByText(/실패한 validation 결과를 바탕으로 수정/)).toBeVisible();
     await expect(
       page
@@ -293,9 +293,9 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Vapor token usage: PASS$/ }),
     ).toBeVisible({ timeout: 8000 });
-    await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeEnabled();
+    await expect(page.getByRole('button', { name: '로컬 승인' })).toBeEnabled();
 
-    await page.getByRole('button', { name: '현재 artifact 로컬 승인' }).click();
+    await page.getByRole('button', { name: '로컬 승인' }).click();
     await expect(page.getByText('로컬 리뷰 승인 완료')).toBeVisible();
   });
 
