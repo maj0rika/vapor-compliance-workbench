@@ -20,7 +20,6 @@ const args = process.argv.slice(2);
 const governed = args.includes('--governed');
 const failOnFail = args.includes('--fail-on-fail');
 const failOnWarn = args.includes('--fail-on-warn');
-const strict = failOnWarn;
 const positional = args.filter((a) => !a.startsWith('--'));
 const projectRoot = resolve(positional[0] ?? process.cwd());
 const scope: ScanScope = governed ? 'governed' : 'all';

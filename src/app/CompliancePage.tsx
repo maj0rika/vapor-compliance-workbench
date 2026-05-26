@@ -4,7 +4,7 @@ import { ComplianceHeader } from '../components/compliance/ComplianceHeader';
 import { ComplianceChecklist } from '../components/compliance/ComplianceChecklist';
 import { ComplianceSummary } from '../components/compliance/ComplianceSummary';
 import { ComplianceGateCard } from '../components/compliance/ComplianceGateCard';
-import { MOCK_REPORT, type ComplianceReport } from '../components/compliance/mockReport';
+import type { ComplianceReport } from '../components/compliance/mockReport';
 import { adaptEngineReport } from '../components/compliance/adaptReport';
 import type { ComplianceReport as EngineReport } from '../compliance/types';
 
@@ -13,13 +13,11 @@ import type { ComplianceReport as EngineReport } from '../compliance/types';
  *
  * /api/compliance/report (Vite 미들웨어, server/compliance/complianceProxy) 에서
  * 실제 엔진 결과를 fetch 한다. 엔진은 deterministic 한 스캐너 집합.
- * 네트워크 실패·CSR-only 환경에서는 MOCK_REPORT 로 graceful fallback.
+ * 네트워크 실패·CSR-only 환경에서는 Engine Failure 에러를 표시한다.
  */
 export function CompliancePage() {
-  const [report, setReport] = useState<ComplianceReport>(MOCK_REPORT);
-  const [selectedGateId, setSelectedGateId] = useState<string>(
-    MOCK_REPORT.gates[0]?.id ?? '',
-  );
+  const [report, setReport] = useState<ComplianceReport | null>(null);
+  const [selectedGateId, setSelectedGateId] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -38,26 +36,26 @@ export function CompliancePage() {
       setSelectedGateId(adapted.gates[0]?.id ?? '');
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      setError(`엔진 호출 실패 (${msg}). 모크 리포트로 표시합니다.`);
-      setReport(MOCK_REPORT);
-      setSelectedGateId(MOCK_REPORT.gates[0]?.id ?? '');
+      setError(`Engine Failure: ${msg}`);
     } finally {
       setIsRunning(false);
     }
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void runScan();
   }, [runScan]);
 
   const handleReset = () => {
-    setReport(MOCK_REPORT);
-    setSelectedGateId(MOCK_REPORT.gates[0]?.id ?? '');
+    setReport(null);
+    setSelectedGateId('');
     setError(null);
   };
 
-  const selectedGate =
-    report.gates.find((g) => g.id === selectedGateId) ?? report.gates[0];
+  const selectedGate = report
+    ? (report.gates.find((g) => g.id === selectedGateId) ?? report.gates[0] ?? null)
+    : null;
 
   return (
     <div className="flex min-h-screen flex-col bg-v-canvas-200">
@@ -67,19 +65,21 @@ export function CompliancePage() {
         isRunning={isRunning}
       />
 
-      <div className="px-v-400 py-v-150">
-        <Text typography="body4" foreground="hint-200">
-          마지막 검사:{' '}
-          {new Date(report.timestamp).toLocaleString('ko-KR', {
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-          })}
-        </Text>
-      </div>
+      {report && (
+        <div className="px-v-400 py-v-150">
+          <Text typography="body4" foreground="hint-200">
+            마지막 검사:{' '}
+            {new Date(report.timestamp).toLocaleString('ko-KR', {
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+              hour: '2-digit',
+              minute: '2-digit',
+              second: '2-digit',
+            })}
+          </Text>
+        </div>
+      )}
 
       {error && (
         <div
@@ -92,28 +92,36 @@ export function CompliancePage() {
         </div>
       )}
 
-      <div className="flex flex-1 flex-col gap-v-300 px-v-400 pb-v-400 md:flex-row md:items-start">
-        <aside className="flex w-full flex-col gap-v-200 md:w-72 md:shrink-0">
-          <ComplianceSummary report={report} />
-          <ComplianceChecklist
-            gates={report.gates}
-            selectedGateId={selectedGateId}
-            onSelectGate={setSelectedGateId}
-          />
-        </aside>
+      {report ? (
+        <div className="flex flex-1 flex-col gap-v-300 px-v-400 pb-v-400 md:flex-row md:items-start">
+          <aside className="flex w-full flex-col gap-v-200 md:w-72 md:shrink-0">
+            <ComplianceSummary report={report} />
+            <ComplianceChecklist
+              gates={report.gates}
+              selectedGateId={selectedGateId}
+              onSelectGate={setSelectedGateId}
+            />
+          </aside>
 
-        <main className="min-w-0 flex-1">
-          {selectedGate ? (
-            <ComplianceGateCard gate={selectedGate} />
-          ) : (
-            <div className="flex items-center justify-center py-v-400">
-              <Text typography="body3" foreground="hint-200">
-                게이트를 선택하세요.
-              </Text>
-            </div>
-          )}
-        </main>
-      </div>
+          <main className="min-w-0 flex-1">
+            {selectedGate ? (
+              <ComplianceGateCard gate={selectedGate} />
+            ) : (
+              <div className="flex items-center justify-center py-v-400">
+                <Text typography="body3" foreground="hint-200">
+                  게이트를 선택하세요.
+                </Text>
+              </div>
+            )}
+          </main>
+        </div>
+      ) : (
+        <div className="flex flex-1 items-center justify-center px-v-400 pb-v-400">
+          <Text typography="body3" foreground="hint-200">
+            검사를 실행하세요.
+          </Text>
+        </div>
+      )}
     </div>
   );
 }
