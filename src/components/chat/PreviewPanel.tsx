@@ -12,7 +12,7 @@ const MetadataPanel = lazy(() =>
 const TokenSyncPanel = lazy(() =>
   import('./TokenSyncPanel').then((m) => ({ default: m.TokenSyncPanel })),
 );
-// G034: ValidationPanel 도 동일하게 분리해 초기 JS bundle 예산 (200KB gzip) 헤드룸 확보.
+// G034: ValidationPanel 도 동일하게 분리해 초기 JS bundle 예산 헤드룸 확보.
 const ValidationPanel = lazy(() =>
   import('./ValidationPanel').then((m) => ({ default: m.ValidationPanel })),
 );
@@ -219,9 +219,9 @@ export function PreviewPanel({
     >
       <header className="flex items-center justify-between border-b border-v-normal px-v-200 py-v-150">
         <div className="flex min-w-0 flex-col gap-v-25">
-          <Text typography="subtitle2">Artifact workspace</Text>
+          <Text typography="subtitle2">Artifact 워크스페이스</Text>
           <Text typography="body4" foreground="hint-200">
-            generated Vapor component package
+            생성된 Vapor 컴포넌트 패키지
           </Text>
         </div>
         <div className="flex items-center gap-v-50">
@@ -330,7 +330,7 @@ export function PreviewPanel({
         >
           <div className="flex flex-wrap gap-v-50">
             <Badge size="sm" colorPalette="primary">
-              Verified sample run
+              검증된 샘플 실행
             </Badge>
             <Badge size="sm" colorPalette="warning">
               Deterministic fixture
@@ -339,13 +339,13 @@ export function PreviewPanel({
               No DeepSeek call
             </Badge>
             <Badge size="sm" colorPalette="success">
-              Same parser
+              동일 파서
             </Badge>
             <Badge size="sm" colorPalette="success">
-              Same Canvas runtime
+              동일 Canvas 런타임
             </Badge>
             <Badge size="sm" colorPalette="success">
-              Same validation runner
+              동일 검증 러너
             </Badge>
           </div>
           <Text typography="body4" foreground="hint-200">
@@ -513,18 +513,18 @@ export function PreviewPanel({
         ) : (
           <div className="flex h-full flex-col gap-v-300">
             <div className="flex flex-col gap-v-100">
-              <Text typography="subtitle2">Workbench readiness</Text>
+              <Text typography="subtitle2">워크벤치 준비 상태</Text>
               <Text typography="body3" foreground="hint-200">
-                요청을 실행하면 Canvas preview, generated files, validation gates, repair
-                loop가 이곳에서 한 번에 연결됩니다.
+                요청을 실행하면 Canvas 미리보기, 생성된 파일, 검증 게이트, 보수
+                루프가 이곳에서 한 번에 연결됩니다.
               </Text>
             </div>
             <div className="grid gap-v-100 sm:grid-cols-2">
               {[
-                ['Canvas waiting', 'No iframe is mounted before artifactSource exists.'],
-                ['Artifact parser waiting', 'Component, Story, Test sections will be extracted.'],
-                ['Validation gates ready', 'Typecheck, Unit, Runtime, Axe, Token, Cleanup.'],
-                ['Repair loop available after failure', 'Failed gate output can be sent back to the agent.'],
+                ['Canvas 대기', 'artifactSource 가 없으면 iframe 을 mount 하지 않습니다.'],
+                ['Artifact 파서 대기', 'Component · Story · Test 섹션을 추출합니다.'],
+                ['검증 게이트 준비됨', 'Typecheck · Unit · Runtime · Axe · Token · Cleanup.'],
+                ['실패 시 보수 루프 사용 가능', '실패한 게이트의 출력을 에이전트에 다시 보냅니다.'],
               ].map(([title, description]) => (
                 <div
                   key={title}
@@ -538,7 +538,7 @@ export function PreviewPanel({
               ))}
             </div>
             <div className="grid gap-v-100">
-              <Text typography="subtitle2">Expected outputs</Text>
+              <Text typography="subtitle2">예상 산출물</Text>
               <div className="grid gap-v-100 text-sm sm:grid-cols-2">
                 {['React + TypeScript', 'Storybook story', 'Vitest test', 'Axe + token check'].map(
                   (item) => (

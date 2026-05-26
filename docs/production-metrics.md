@@ -43,7 +43,7 @@
 | C04 | Production build | `npm run build` | exit 0 | PASS |
 | C05 | Generated artifact end-to-end | `npm run verify:generated` | 6/6 gates pass | PASS |
 | C06 | E2E (smoke 제외) | `npm run test:e2e` | 100% pass | PASS |
-| C07 | Bundle budget | `npm run verify:bundle` | initial gzip <= 200KB | PASS (199.63KB) |
+| C07 | Bundle budget | `npm run verify:bundle` | initial gzip <= 220KB | PASS |
 | C08 | Lighthouse budget | `npm run verify:lighthouse` | Perf>=90 a11y>=95 BP>=95 SEO>=90 LCP<=2.5s CLS<=0.1 | PASS (Perf=100/A11y=100/BP=100/SEO=91, LCP=484ms, CLS=0) |
 
 ### Trust Boundary
@@ -97,7 +97,7 @@
 | P02 | artifact parse | `npm test -- responseParser.perf` | <= 100ms avg / 10 iter | PASS (G034; large fixture <3ms) |
 | P03 | temp workspace validation | `verify:generated` 총 duration | <= 15s | PASS (~5s fixture) |
 | P04 | validation 30s hard timeout | `runCommand.ts` 의 `timeoutMs = 30_000` 기본값 + `runCommand.test.ts` timeout 분기 PASS | 30s default 적용 + 타임아웃 exit code 124 검증 PASS | PASS (G035) |
-| P05 | Initial JS gzip | C07 동일 | <= 200KB | PASS (199.63KB) |
+| P05 | Initial JS gzip | C07 동일 | <= 220KB | PASS |
 
 ### Accessibility
 

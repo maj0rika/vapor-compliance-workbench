@@ -1,6 +1,12 @@
+import { Suspense, lazy, useState } from 'react';
 import { Button, Text } from '@vapor-ui/core';
 import { AiSmartieOutlineIcon } from '@vapor-ui/icons';
 import type { TemplateKey } from '../../agent';
+
+// 사용 설명서는 사용자가 열 때만 mount → 초기 JS bundle 예산 (200KB gzip) 보호.
+const UsageGuide = lazy(() =>
+  import('./UsageGuide').then((m) => ({ default: m.UsageGuide })),
+);
 
 type TemplateItem = {
   label: string;
@@ -49,11 +55,11 @@ const TEMPLATES: TemplateItem[] = [
 ];
 
 const WORKFLOW_STEPS = [
-  'Choose task',
-  'Attach spec/token/source',
-  'Generate artifact',
-  'Validate gates',
-  'Repair or approve',
+  '작업 선택',
+  '문서·토큰·코드 첨부',
+  'Artifact 생성',
+  '검증 게이트 실행',
+  '보수 또는 승인',
 ];
 
 export type EmptyStateProps = {
@@ -64,11 +70,12 @@ export type EmptyStateProps = {
 };
 
 export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
+  const [showUsage, setShowUsage] = useState(false);
   return (
     <div className="flex min-h-0 flex-1 flex-col justify-start gap-v-200 overflow-y-auto p-v-400 pb-v-700 pt-v-500">
       <div className="grid max-w-[820px] gap-v-300">
         <div className="grid gap-v-100 rounded-v-300 border border-v-normal bg-v-canvas-100 p-v-300">
-          <Text typography="subtitle2">Workbench ready</Text>
+          <Text typography="subtitle2">5단계 작업 흐름</Text>
           <div className="grid gap-v-100 sm:grid-cols-5">
             {WORKFLOW_STEPS.map((step, index) => (
               <div
@@ -100,10 +107,10 @@ export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
 
             <div className="grid gap-v-150 rounded-v-300 border border-v-primary bg-v-primary-100 p-v-200">
               <div className="flex min-w-0 flex-col gap-v-50">
-                <Text typography="subtitle2">Verified sample run</Text>
+                <Text typography="subtitle2">검증된 샘플 바로 보기</Text>
                 <Text typography="body4" foreground="hint-200">
-                  deterministic fixture · no DeepSeek call · same parser, Canvas
-                  runtime, and validation runner
+                  결정적 fixture · DeepSeek 호출 없음 · 실제 파서·Canvas
+                  런타임·검증 러너를 그대로 사용
                 </Text>
               </div>
               <Button
@@ -111,7 +118,7 @@ export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
                 colorPalette="primary"
                 onClick={onRunVerifiedSample}
               >
-                Run verified sample
+                검증 샘플 실행
               </Button>
             </div>
 
@@ -138,6 +145,36 @@ export function EmptyState({ onPick, onRunVerifiedSample }: EmptyStateProps) {
                   </span>
                 </button>
               ))}
+            </div>
+
+            <div className="rounded-v-300 border border-v-normal bg-v-canvas-200 p-v-200">
+              <button
+                type="button"
+                onClick={() => setShowUsage((open) => !open)}
+                aria-expanded={showUsage}
+                aria-controls="empty-state-usage-guide"
+                className="flex w-full items-center justify-between gap-v-100 text-left text-sm font-medium"
+              >
+                <span>자세한 사용 설명서</span>
+                <span aria-hidden="true">{showUsage ? '▾' : '▸'}</span>
+              </button>
+              {showUsage && (
+                <div id="empty-state-usage-guide">
+                  <Suspense
+                    fallback={
+                      <Text
+                        typography="body4"
+                        foreground="hint-200"
+                        className="mt-v-150 block"
+                      >
+                        설명서를 불러오는 중...
+                      </Text>
+                    }
+                  >
+                    <UsageGuide />
+                  </Suspense>
+                </div>
+              )}
             </div>
           </div>
         </div>

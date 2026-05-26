@@ -14,14 +14,14 @@ test.describe('verified sample run', () => {
     });
 
     await page.goto('/');
-    await page.getByRole('button', { name: 'Run verified sample' }).click();
+    await page.getByRole('button', { name: '검증 샘플 실행' }).click();
 
     await expect(page.getByLabel('Verified sample provenance')).toBeVisible();
     await expect(page.getByText('Deterministic fixture')).toBeVisible();
     await expect(page.getByText('No DeepSeek call')).toBeVisible();
-    await expect(page.getByText('Same parser')).toBeVisible();
-    await expect(page.getByText('Same Canvas runtime')).toBeVisible();
-    await expect(page.getByText('Same validation runner')).toBeVisible();
+    await expect(page.getByText('동일 파서')).toBeVisible();
+    await expect(page.getByText('동일 Canvas 런타임')).toBeVisible();
+    await expect(page.getByText('동일 검증 러너')).toBeVisible();
     await expect(page.locator('[aria-label="Validation: waiting"]')).toBeVisible();
     await expect(page.getByText('Validation: waiting for runner output')).toBeVisible();
     await expect(page.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();

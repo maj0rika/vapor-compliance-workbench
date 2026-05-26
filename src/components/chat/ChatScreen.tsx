@@ -190,9 +190,9 @@ export function ChatScreen({
       {/* 헤더 바 */}
       <div className="flex items-center justify-between border-b border-v-normal px-v-300 py-v-150">
         <div className="flex min-w-0 flex-col gap-v-25">
-          <Text typography="subtitle2">Run pipeline</Text>
+          <Text typography="subtitle2">실행 파이프라인</Text>
           <Text typography="body4" foreground="hint-200">
-            Generate → Canvas → Validate → Repair → Approve
+            요청 → 코드 생성 → Canvas 렌더 → 검증 → 보수 → 승인
           </Text>
         </div>
         <div className="flex items-center gap-v-50">

@@ -63,7 +63,7 @@ describe('PreviewPanel', () => {
     render(<PreviewPanel draft={ARTIFACT} artifactSource={ARTIFACT_SOURCE} onClose={vi.fn()} />);
 
     expect(screen.getByLabelText('생성물 워크스페이스')).toHaveTextContent(
-      'Artifact workspace',
+      'Artifact 워크스페이스',
     );
     expect(screen.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(
       'aria-selected',
@@ -284,7 +284,7 @@ describe('PreviewPanel', () => {
     expect(screen.getByLabelText('Verified sample provenance')).toHaveTextContent(
       'No DeepSeek call',
     );
-    expect(screen.getByText('Same validation runner')).toBeInTheDocument();
+    expect(screen.getByText('동일 검증 러너')).toBeInTheDocument();
     expect(screen.getByText('Validation: waiting for runner output')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '현재 artifact 로컬 승인' })).toBeDisabled();
   });
@@ -322,9 +322,9 @@ describe('PreviewPanel', () => {
 
   it('생성물이 비어 있으면 안내 문구를 보여준다', () => {
     render(<PreviewPanel draft="" onClose={vi.fn()} />);
-    expect(screen.getByText('Workbench readiness')).toBeInTheDocument();
-    expect(screen.getByText('Canvas waiting')).toBeInTheDocument();
-    expect(screen.getByText('Validation gates ready')).toBeInTheDocument();
+    expect(screen.getByText('워크벤치 준비 상태')).toBeInTheDocument();
+    expect(screen.getByText('Canvas 대기')).toBeInTheDocument();
+    expect(screen.getByText('검증 게이트 준비됨')).toBeInTheDocument();
     expect(screen.getByText('Axe + token check')).toBeInTheDocument();
   });
 

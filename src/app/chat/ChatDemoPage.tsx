@@ -21,12 +21,13 @@ export function ChatDemoPage() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-v-200">
       <header className="flex flex-col gap-v-50">
-        <h1 className="m-0 text-xl font-semibold">Vapor DS Automation Workbench</h1>
+        <h1 className="m-0 text-xl font-semibold">Vapor 디자인시스템 자동화 워크벤치</h1>
         <p
           className="m-0 text-sm"
           style={{ color: 'var(--vapor-color-foreground-hint-200)' }}
         >
-          Generate, render, validate, repair, and approve Vapor Design System artifacts.
+          자연어로 요청하면 Vapor 컴포넌트 코드 · Storybook story · Vitest 테스트를
+          생성하고, 실제 빌드·접근성·토큰 검증을 거쳐 결과를 보여줍니다.
         </p>
       </header>
       <ChatScreen

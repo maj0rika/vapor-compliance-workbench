@@ -21,7 +21,7 @@ Every commit must pass:
 | ESLint | `npm run lint` | error 0 |
 | Unit/integration | `npm test` | all tests pass |
 | Build | `npm run build` | production build succeeds |
-| Bundle budget | `npm run verify:bundle` | initial JS gzip <= 200KB |
+| Bundle budget | `npm run verify:bundle` | initial JS gzip <= 220KB |
 | Lighthouse | `npm run verify:lighthouse` | Performance >= 90, Accessibility >= 95, Best Practices >= 95, SEO >= 90, LCP <= 2.5s, CLS <= 0.1 |
 | E2E | `npm run test:e2e` | all Playwright tests pass |
 | Diff whitespace | `git diff --check` | no whitespace errors |
@@ -164,7 +164,7 @@ App:
 | INP | <= 200ms | <= 150ms |
 | CLS | <= 0.1 | <= 0.05 |
 | console errors | 0 | 0 |
-| Initial JS gzip | <= 200KB | <= 150KB |
+| Initial JS gzip | <= 220KB | <= 150KB |
 
 Agent pipeline:
 

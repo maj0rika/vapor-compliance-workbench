@@ -71,7 +71,7 @@ test.describe('visual regression', () => {
   test('(5) Verified sample loaded — pre-validation', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
-    await page.getByRole('button', { name: 'Run verified sample' }).click();
+    await page.getByRole('button', { name: '검증 샘플 실행' }).click();
     await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({
       timeout: 6000,
     });
