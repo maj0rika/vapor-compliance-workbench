@@ -76,14 +76,52 @@ export type PreviewPanelProps = {
 export type ValidationPipelineState = 'idle' | 'running' | 'pass' | 'fail' | 'error';
 
 const TAB_LABELS: Record<ArtifactTab, string> = {
-  canvas: 'Canvas',
+  canvas: '미리보기',
   metadata: '메타데이터',
   'token-mapping': '토큰 매핑',
-  component: 'Component',
-  story: 'Story',
-  test: 'Test',
+  component: '코드',
+  story: '스토리',
+  test: '테스트',
   validation: '검증',
 };
+
+const GATE_LABELS: Record<string, string> = {
+  'Artifact parse': '산출물 파싱',
+  'Metadata contract': '메타데이터 계약',
+  'Vapor token usage': 'Vapor 토큰',
+  'File write': '파일 생성',
+  Typecheck: '타입 검사',
+  Unit: '단위 테스트',
+  'Runtime Render': '런타임 렌더',
+  Axe: '접근성',
+  Cleanup: '정리',
+};
+
+function gateLabel(label: string): string {
+  return GATE_LABELS[label] ?? label;
+}
+
+function statusLabel(status: 'pass' | 'warn' | 'fail' | 'check'): string {
+  if (status === 'pass') return '통과';
+  if (status === 'fail') return '실패';
+  if (status === 'check') return '대기';
+  return '확인 필요';
+}
+
+function previewStatusLabel(status: CanvasPreviewStatus): string {
+  if (status === 'ready') return '준비됨';
+  if (status === 'failed') return '실패';
+  if (status === 'timeout') return '지연';
+  return '로딩';
+}
+
+function variantDisplayName(name: string): string {
+  if (name.toLowerCase() === 'default') return '기본';
+  if (name.toLowerCase() === 'disabled') return '비활성';
+  if (name.toLowerCase() === 'loading') return '로딩';
+  if (name.toLowerCase() === 'error') return '오류';
+  return name;
+}
 
 /**
  * DS 자동화 에이전트가 만든 산출물을 검토하는 artifact workspace.
@@ -124,7 +162,7 @@ export function PreviewPanel({
   const canvasSection = canvas && !isTokenSync
     ? {
         id: 'canvas' as const,
-        label: 'Canvas',
+        label: TAB_LABELS.canvas,
         // Canvas 탭의 "Copy" 가 가져갈 텍스트. raw HTML/CSS 대신 Vapor 토큰
         // 친화적인 상태 요약을 제공한다 — 실제 시각 preview 는 별도 iframe
         // (ArtifactCanvas) 가 렌더하므로 이 content 는 사용자가 외부에 공유
@@ -138,10 +176,10 @@ export function PreviewPanel({
         }),
       }
     : undefined;
-  const codeSections = sections.map((section) =>
-    section.id === 'validation' ? { ...section, label: TAB_LABELS.validation } : section,
-  );
-  // validation 탭: artifact에 ## Validation 섹션이 없어도 결과가 있으면 탭을 추가한다.
+  const codeSections = sections
+    .filter((section) => section.id !== 'validation')
+    .map((section) => ({ ...section, label: TAB_LABELS[section.id] ?? section.label }));
+  // validation 탭: runner 가 실제로 실행 중이거나 결과가 있을 때만 노출한다.
   const hasValidationSection = codeSections.some((s) => s.id === 'validation');
   const validationTabSection =
     !hasValidationSection && (validationResult || validationStatus !== 'idle')
@@ -177,6 +215,8 @@ export function PreviewPanel({
   const handleRunValidation = () => {
     if (!artifactSource || validationStatus === 'running') return;
     setValidationStatus('running');
+    setApproved(false);
+    onApprovalChange?.(false);
     onValidationStateChange?.('running');
     void runValidation(artifactSource)
       .then((result) => {
@@ -223,7 +263,7 @@ export function PreviewPanel({
             typography="subtitle2"
             className="whitespace-nowrap"
           >
-            Artifact 워크스페이스
+            산출물 워크스페이스
           </Text>
           <Text
             typography="body4"
@@ -233,7 +273,7 @@ export function PreviewPanel({
             생성된 Vapor 컴포넌트 패키지
           </Text>
         </div>
-        <div className="flex flex-wrap items-center gap-v-50">
+        <div className="flex flex-wrap items-center justify-end gap-v-75">
           {active && (
             <IconButton
               size="sm"
@@ -247,76 +287,62 @@ export function PreviewPanel({
           {artifactSource && (
             <Button
               size="sm"
-              variant="outline"
               colorPalette="primary"
+              title="생성물이 실제로 빌드되고 테스트되는지 확인합니다."
               disabled={validationStatus === 'running'}
               onClick={handleRunValidation}
             >
               {validationStatus === 'running' ? '진행 중…' : '검증 실행'}
             </Button>
           )}
-          {artifactSource && validationResult && (
-            <>
-              <Button
-                size="sm"
-                variant="outline"
-                colorPalette="primary"
-                disabled={!canRepair}
-                title={
-                  repairChainExhausted && hasFailedGates
-                    ? `최대 수정 횟수 초과 (${repairChainAttempts}/${maxRepairAttemptsPerChain}). 새 prompt 로 다시 시도하세요.`
-                    : undefined
-                }
-                onClick={() =>
-                  canRepair &&
-                  onRepair?.({
-                    artifactSource,
-                    validationResult,
-                    failedGates,
-                  })
-                }
-              >
-                실패 수정 (Fix with Agent)
-              </Button>
-              {hasFailedGates &&
-                Number.isFinite(maxRepairAttemptsPerChain) &&
-                maxRepairAttemptsPerChain > 0 && (
-                  <Text
-                    typography="body4"
-                    foreground={repairChainExhausted ? 'danger-200' : 'hint-200'}
-                    aria-live="polite"
-                    data-testid="repair-attempts-status"
-                  >
-                    {repairChainExhausted
-                      ? `최대 수정 횟수 초과 (${repairChainAttempts}/${maxRepairAttemptsPerChain})`
-                      : `수정 ${repairChainAttempts}/${maxRepairAttemptsPerChain}`}
-                  </Text>
-                )}
-            </>
-          )}
-          {validationResult && failedGates.length > 0 && (
+          {artifactSource && validationResult && hasFailedGates && (
             <Button
               size="sm"
               variant="outline"
               colorPalette="danger"
-              onClick={handleCopyFailureOutput}
+              disabled={!canRepair}
+              title={
+                repairChainExhausted
+                  ? `최대 수정 횟수 초과 (${repairChainAttempts}/${maxRepairAttemptsPerChain}). 새 요청으로 다시 시도하세요.`
+                  : `실패한 검증 항목을 다시 생성합니다. 남은 수정 ${Math.max(
+                      0,
+                      maxRepairAttemptsPerChain - repairChainAttempts,
+                    )}회`
+              }
+              data-testid="repair-action"
+              onClick={() =>
+                canRepair &&
+                onRepair?.({
+                  artifactSource,
+                  validationResult,
+                  failedGates,
+                })
+              }
             >
-              실패 로그 복사
+              실패 수정
             </Button>
           )}
-          {artifactSource && (
+          {validationResult && failedGates.length > 0 && (
             <Button
               size="sm"
-              variant="outline"
+              variant="ghost"
+              colorPalette="danger"
+              onClick={handleCopyFailureOutput}
+            >
+              로그 복사
+            </Button>
+          )}
+          {canApprove && !approved && (
+            <Button
+              size="sm"
               colorPalette="success"
-              aria-label="현재 artifact 로컬 승인"
-              disabled={!canApprove}
+              title="검증을 통과한 생성물을 로컬 리뷰에서 승인합니다."
               onClick={() => {
                 setApproved(true);
                 onApprovalChange?.(true);
               }}
             >
-              로컬 승인
+              승인
             </Button>
           )}
           {canClose && (
@@ -334,23 +360,18 @@ export function PreviewPanel({
 
       {isVerifiedSample && (
         <div
-          aria-label="Verified sample provenance"
+          aria-label="검증 샘플 출처"
           className="grid gap-v-100 border-b border-v-normal bg-v-primary-100 px-v-200 py-v-150"
         >
-          <Text typography="body4" foreground="hint-200">
-            이 화면은 <strong>예시 데이터</strong>입니다. DeepSeek API 는 호출되지
-            않았어요 (연동 상태와 별개). 파서·Canvas·검증 러너는 실제 응답과 동일한
-            경로를 씁니다.
-          </Text>
           <div className="flex flex-wrap gap-v-50">
             <Badge size="sm" colorPalette="primary">
               검증된 샘플 실행
             </Badge>
-            <Badge size="sm" colorPalette="warning">
-              Deterministic fixture
+            <Badge size="sm" colorPalette="primary">
+              고정 샘플
             </Badge>
-            <Badge size="sm" colorPalette="warning">
-              No DeepSeek call
+            <Badge size="sm" colorPalette="primary">
+              API 호출 없음
             </Badge>
             <Badge size="sm" colorPalette="success">
               동일 파서
@@ -363,8 +384,7 @@ export function PreviewPanel({
             </Badge>
           </div>
           <Text typography="body4" foreground="hint-200">
-            검증은 대기 상태입니다. "검증 실행" 을 눌러야 실제
-            /api/deepseek/validate runner 의 결과가 반영됩니다.
+            이 샘플은 화면 확인용 고정 데이터입니다. 실제 검증 결과는 "검증 실행" 후 반영됩니다.
           </Text>
         </div>
       )}
@@ -372,7 +392,7 @@ export function PreviewPanel({
       {visibleSections.length > 0 && (
         <div
           role="tablist"
-          aria-label="Artifact workspace tabs"
+          aria-label="산출물 워크스페이스 탭"
           className="flex flex-wrap gap-v-50 border-b border-v-normal px-v-200 py-v-150"
         >
           {visibleSections.map((section) => (
@@ -409,30 +429,7 @@ export function PreviewPanel({
                         : 'warning'
                   }
                 >
-                  {detail.label}: {detail.status.toUpperCase()}
-                </Badge>
-              ))}
-            </div>
-          );
-        }
-        const artifactValidationSection = codeSections.find((s) => s.id === 'validation');
-        if (artifactValidationSection) {
-          const badges = extractValidationBadges(artifactValidationSection.content);
-          return (
-            <div className="flex flex-wrap gap-v-50 border-b border-v-normal px-v-200 py-v-150">
-              {badges.map((item) => (
-                <Badge
-                  key={item.label}
-                  size="sm"
-                  colorPalette={
-                    item.status === 'pass'
-                      ? 'success'
-                      : item.status === 'fail'
-                        ? 'danger'
-                        : 'warning'
-                  }
-                >
-                  {item.label}: {item.status.toUpperCase()}
+                  {gateLabel(detail.label)}: {statusLabel(detail.status)}
                 </Badge>
               ))}
             </div>
@@ -442,18 +439,18 @@ export function PreviewPanel({
       })()}
       {showCompactValidationWaiting && (
         <div className="flex flex-wrap gap-v-50 border-b border-v-normal px-v-200 py-v-100">
-          <Badge size="sm" colorPalette="warning">
-            Validation: waiting for runner output
+          <Badge size="sm" colorPalette="primary">
+            검증 대기: 실행 전
           </Badge>
         </div>
       )}
       {approved && (
         <div className="grid gap-v-50 border-b border-v-normal px-v-200 py-v-150">
           <Badge size="md" colorPalette="success">
-            로컬 리뷰 승인 완료
+            승인 완료
           </Badge>
           <Text typography="body4" foreground="hint-200">
-            로컬 리뷰 승인만 기록되었습니다. 저장소 변경이나 PR은 생성되지 않습니다.
+            이 생성물을 사용해도 된다는 로컬 확인입니다. 저장소 반영은 별도 커밋/PR 단계에서 진행합니다.
           </Text>
         </div>
       )}
@@ -470,17 +467,30 @@ export function PreviewPanel({
               tabIndex: 0,
             }
           : {})}
-        className="min-h-0 flex-1 overflow-y-auto p-v-300"
+        className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-v-300"
       >
         {active?.id === 'canvas' && canvas && !isTokenSync ? (
-          <ArtifactCanvas
-            model={canvas}
-            artifactSource={artifactSource}
-            activeVariantName={activeVariantName}
-            onVariantChange={setActiveVariantName}
-            theme={canvasTheme}
-            onThemeChange={setCanvasTheme}
-          />
+          <div className="flex min-h-full min-w-0 flex-col gap-v-300 overflow-x-hidden">
+            <ArtifactCanvas
+              model={canvas}
+              artifactSource={artifactSource}
+              activeVariantName={activeVariantName}
+              onVariantChange={setActiveVariantName}
+              theme={canvasTheme}
+              onThemeChange={setCanvasTheme}
+            />
+            {sections.find((section) => section.id === 'component') && (
+              <section className="flex min-w-0 flex-col gap-v-150 border-t border-v-normal pt-v-300">
+                <div className="flex flex-col gap-v-50">
+                  <Text typography="subtitle2">생성 코드</Text>
+                  <Text typography="body4" foreground="hint-200">
+                    미리보기와 같은 산출물에서 추출한 코드입니다.
+                  </Text>
+                </div>
+                <Markdown>{sections.find((section) => section.id === 'component')?.content ?? ''}</Markdown>
+              </section>
+            )}
+          </div>
         ) : active?.id === 'metadata' ? (
           <Suspense fallback={<LazyPanelFallback />}>
             <MetadataPanel
@@ -521,7 +531,7 @@ export function PreviewPanel({
             />
           </Suspense>
         ) : active ? (
-          <div aria-live="polite" className="flex flex-col gap-v-150">
+          <div aria-live="polite" className="flex min-w-0 flex-col gap-v-150 overflow-x-hidden">
             {active.id === 'story' && Boolean(canvas) && (
               <div className="flex flex-wrap items-center justify-between gap-v-100 rounded-v-200 border border-v-normal bg-v-canvas-200 px-v-200 py-v-150">
                 <Text typography="body4">
@@ -567,10 +577,10 @@ export function PreviewPanel({
             </div>
             <div className="grid gap-v-100 sm:grid-cols-2">
               {[
-                ['Canvas 대기', 'artifactSource 가 없으면 iframe 을 mount 하지 않습니다.'],
-                ['Artifact 파서 대기', 'Component · Story · Test 섹션을 추출합니다.'],
-                ['검증 게이트 준비됨', 'Typecheck · Unit · Runtime · Axe · Token · Cleanup.'],
-                ['실패 시 보수 루프 사용 가능', '실패한 게이트의 출력을 에이전트에 다시 보냅니다.'],
+                ['Canvas 대기', '산출물이 생성되면 미리보기 iframe 을 연결합니다.'],
+                ['산출물 파서 대기', '코드 · 스토리 · 테스트 섹션을 추출합니다.'],
+                ['검증 게이트 준비됨', '타입 · 단위 테스트 · 렌더 · 접근성 · 토큰을 확인합니다.'],
+                ['보수 루프 준비됨', '실패한 게이트의 출력을 에이전트에 다시 보냅니다.'],
               ].map(([title, description]) => (
                 <div
                   key={title}
@@ -586,7 +596,7 @@ export function PreviewPanel({
             <div className="grid gap-v-100">
               <Text typography="subtitle2">예상 산출물</Text>
               <div className="grid gap-v-100 text-sm sm:grid-cols-2">
-                {['React + TypeScript', 'Storybook story', 'Vitest test', 'Axe + token check'].map(
+                {['React + TypeScript', 'Storybook 스토리', 'Vitest 테스트', '접근성 + 토큰 확인'].map(
                   (item) => (
                     <div
                       key={item}
@@ -597,13 +607,6 @@ export function PreviewPanel({
                   ),
                 )}
               </div>
-            </div>
-            <div className="flex flex-wrap gap-v-50">
-              {['검증 실행', '실패 수정 (Fix with Agent)', '로컬 승인'].map((label) => (
-                <Button key={label} size="sm" variant="outline" disabled>
-                  {label}
-                </Button>
-              ))}
             </div>
           </div>
         )}
@@ -656,7 +659,7 @@ function ArtifactCanvas({
 
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== previewOrigin) return;
-      if (event.source !== iframeRef.current?.contentWindow) return;
+      if (event.source && event.source !== iframeRef.current?.contentWindow) return;
       if (!isPreviewMessage(event.data)) return;
       if (event.data.previewRunId !== previewRunId) return;
       if (event.data.variant !== activeVariantName || event.data.theme !== theme) return;
@@ -721,11 +724,11 @@ function ArtifactCanvas({
 
   if (!previewSrc) {
     return (
-      <div className="flex h-full min-h-[260px] flex-col gap-v-150">
+      <div className="flex h-full min-h-[260px] min-w-0 flex-col gap-v-150 overflow-x-hidden">
         <div className="flex min-w-0 flex-col gap-v-25">
           <Text typography="subtitle2">Canvas 사용 불가</Text>
           <Text typography="body4" foreground="hint-200">
-            runtime preview requires a parsed component artifact, source payload, and valid metadata contract
+            미리보기를 띄우려면 컴포넌트 산출물, 원문, 유효한 메타데이터가 필요합니다.
           </Text>
         </div>
         <div className="flex flex-wrap gap-v-50">
@@ -740,8 +743,8 @@ function ArtifactCanvas({
             }
           >
             {model.hasMetadata
-              ? `Metadata contract: ${model.metadataValidation.status.toUpperCase()}`
-              : 'Heuristic props'}
+              ? `메타데이터: ${statusLabel(model.metadataValidation.status)}`
+              : '추정 props'}
           </Badge>
         </div>
         <div
@@ -750,8 +753,8 @@ function ArtifactCanvas({
         >
           <Text typography="body3">
             {model.metadataValidation.status === 'fail'
-              ? `Metadata contract failed: ${model.metadataValidation.errors.join(' ')}`
-              : '이 artifact는 실제 React preview runtime으로 mount되지 않았습니다. Canvas를 성공 상태로 표시하지 않고 Component/Story/Test 탭에서 원본만 검토합니다.'}
+              ? `메타데이터 검증 실패: ${model.metadataValidation.errors.join(' ')}`
+              : '이 산출물은 실제 미리보기 런타임으로 mount되지 않았습니다. 성공 상태로 표시하지 않고 코드/스토리/테스트 탭에서 원본만 검토합니다.'}
           </Text>
         </div>
       </div>
@@ -759,17 +762,17 @@ function ArtifactCanvas({
   }
 
   return (
-    <div className="flex h-full min-h-[360px] flex-col gap-v-200">
-        <div className="flex items-center justify-between">
+    <div className="flex h-full min-h-[360px] min-w-0 flex-col gap-v-200 overflow-x-hidden">
+        <div className="flex min-w-0 flex-wrap items-start justify-between gap-v-100">
           <div className="flex min-w-0 flex-col gap-v-25">
-            <Text typography="subtitle2">Canvas</Text>
+            <Text typography="subtitle2">미리보기</Text>
             <Text typography="body4" foreground="hint-200">
-              sandboxed generated component preview
+              생성된 컴포넌트를 격리된 Canvas에서 렌더링합니다.
             </Text>
           </div>
-        <div className="flex flex-wrap justify-end gap-v-50">
+        <div className="flex min-w-0 flex-wrap justify-end gap-v-50 overflow-hidden">
           <Badge size="sm" colorPalette="primary">
-            Canvas preview
+            Canvas 미리보기
           </Badge>
           <Badge
             size="sm"
@@ -782,12 +785,12 @@ function ArtifactCanvas({
             }
           >
             {model.hasMetadata
-              ? `Metadata contract: ${model.metadataValidation.status.toUpperCase()}`
-              : 'Heuristic props'}
+              ? `메타데이터: ${statusLabel(model.metadataValidation.status)}`
+              : '추정 props'}
           </Badge>
           <Badge
             size="sm"
-            aria-label={`Canvas runtime: ${previewStatus}`}
+            aria-label={`미리보기 런타임: ${previewStatusLabel(previewStatus)}`}
             colorPalette={
               previewStatus === 'ready'
                 ? 'success'
@@ -798,14 +801,14 @@ function ArtifactCanvas({
                     : 'warning'
             }
           >
-            Runtime {previewStatus}
+            런타임 {previewStatusLabel(previewStatus)}
           </Badge>
         </div>
       </div>
       {!model.hasMetadata && (
         <div className="rounded-v-200 border border-v-normal bg-v-canvas-200 px-v-200 py-v-150">
           <Text typography="body4">
-            artifact-meta가 없어 Canvas가 component/story 텍스트에서 props를 추정합니다.
+            artifact-meta가 없어 Canvas가 코드/스토리 텍스트에서 props를 추정합니다.
           </Text>
         </div>
       )}
@@ -830,10 +833,10 @@ function ArtifactCanvas({
             size="sm"
             variant={variant.name === activeVariantName ? 'outline' : 'ghost'}
             colorPalette="primary"
-            aria-label={`${variant.name} variant`}
+            aria-label={`${variant.name} 상태`}
             onClick={() => onVariantChange(variant.name)}
           >
-            {variant.name}
+            {variantDisplayName(variant.name)}
           </Button>
         ))}
         <div className="mx-v-100 h-v-300 border-l border-v-normal" />
@@ -843,16 +846,16 @@ function ArtifactCanvas({
             size="sm"
             variant={nextTheme === theme ? 'outline' : 'ghost'}
             colorPalette="primary"
-            aria-label={`${capitalize(nextTheme)} theme`}
+            aria-label={nextTheme === 'light' ? '라이트 테마' : '다크 테마'}
             onClick={() => onThemeChange(nextTheme)}
           >
-            {capitalize(nextTheme)}
+            {nextTheme === 'light' ? '라이트' : '다크'}
           </Button>
         ))}
       </div>
       <iframe
         ref={iframeRef}
-        title="Generated artifact canvas"
+        title="생성물 Canvas 미리보기"
         sandbox="allow-scripts allow-same-origin"
         src={previewSrc}
         className="min-h-[180px] flex-1 rounded-v-300 border border-v-normal bg-v-canvas-100"
@@ -923,7 +926,7 @@ function parseArtifactSections(markdown: string): ArtifactSection[] {
 
   const matches = [...markdown.matchAll(/^##\s+(Component|Story|Test|Validation)\s*$/gim)];
   if (matches.length === 0) {
-    return [{ id: 'component', label: 'Component', content: markdown }];
+    return [{ id: 'component', label: TAB_LABELS.component, content: markdown }];
   }
 
   return matches.map((match, index) => {
@@ -1129,31 +1132,6 @@ function formatFailureOutput(result: RemoteValidationResult): string {
       return [`[${detail.label}]`, output].join('\n');
     })
     .join('\n\n');
-}
-
-
-function extractValidationBadges(
-  content: string,
-): Array<{ label: string; status: 'pass' | 'fail' | 'check' }> {
-  const labels = ['Typecheck', 'Unit', 'Runtime Render', 'Axe', 'Vapor token usage', 'Cleanup'];
-  return labels.map((label) => ({
-    label,
-    status: readValidationStatus(content, label),
-  }));
-}
-
-function readValidationStatus(content: string, label: string): 'pass' | 'fail' | 'check' {
-  const match = content.match(new RegExp(`${escapeRegExp(label)}\\s*:\\s*(PASS|FAIL|CHECK)`, 'i'));
-  const status = match?.[1]?.toLowerCase();
-  return status === 'pass' || status === 'fail' ? status : 'check';
-}
-
-function escapeRegExp(value: string): string {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function capitalize(value: string): string {
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 }
 
 function createPreviewRunId(

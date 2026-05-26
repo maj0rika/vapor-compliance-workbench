@@ -50,6 +50,8 @@ body {
 /* 마크다운 렌더링 — 색상은 Vapor 테마 토큰을 상속해 다크 모드에 적응한다. */
 .chat-md {
   max-width: 100%;
+  min-width: 0;
+  overflow-x: hidden;
   font-size: 0.95rem;
   line-height: 1.65;
   overflow-wrap: anywhere;
@@ -115,7 +117,9 @@ body {
 .chat-md pre {
   margin: 0.6em 0;
   padding: 0.7em 0.85em;
+  width: 100%;
   max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   overscroll-behavior-x: contain;
   background: var(--vapor-color-background-hint-100);
@@ -124,7 +128,9 @@ body {
 }
 .chat-md pre code {
   display: block;
+  width: max-content;
   min-width: max-content;
+  max-width: none;
   background: none;
   padding: 0;
   white-space: pre;

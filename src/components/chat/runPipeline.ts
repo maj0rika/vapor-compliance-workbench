@@ -20,10 +20,22 @@ export function deriveRunPipelineSteps({
   validationState: ValidationPipelineState;
   approved?: boolean;
 }): RunPipelineStep[] {
+  const promptStatus: PipelineStepStatus = hasPrompt ? 'pass' : 'active';
+  const artifactStatus: PipelineStepStatus = !hasPrompt
+    ? 'waiting'
+    : hasDraft
+      ? 'pass'
+      : 'active';
+  const canvasStatus: PipelineStepStatus = !hasDraft
+    ? 'waiting'
+    : hasArtifactSource
+      ? 'pass'
+      : 'active';
+
   return [
-    { label: 'Prompt', status: hasPrompt ? 'pass' : 'waiting' },
-    { label: 'Artifact', status: hasDraft ? 'pass' : 'waiting' },
-    { label: 'Canvas', status: hasArtifactSource ? 'pass' : 'waiting' },
+    { label: 'Prompt', status: promptStatus },
+    { label: 'Artifact', status: artifactStatus },
+    { label: 'Canvas', status: canvasStatus },
     { label: 'Validation', status: toPipelineStatus(validationState) },
     { label: 'Repair', status: validationState === 'fail' || validationState === 'error' ? 'active' : 'waiting' },
     { label: 'Approve', status: approved ? 'pass' : validationState === 'pass' ? 'active' : 'waiting' },
