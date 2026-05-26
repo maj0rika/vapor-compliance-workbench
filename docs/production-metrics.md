@@ -93,7 +93,7 @@
 
 | ID | 지표 | 측정 명령 | 임계값 | 현재 |
 |----|------|-----------|--------|------|
-| P01 | first token | live smoke timing | <= 3s | (수동 smoke) |
+| P01 | first token latency | `DEEPSEEK_API_KEY=... npm run smoke:live-deepseek` (`tests/live-deepseek.smoke.spec.ts` 의 P01 assertion) | submit 클릭 → 첫 assistant token 가시화 < 3s | PASS conditional (G037; API key 미설정 시 skip, 측정 시 SLA assertion + 정적 가드) |
 | P02 | artifact parse | `npm test -- responseParser.perf` | <= 100ms avg / 10 iter | PASS (G034; large fixture <3ms) |
 | P03 | temp workspace validation | `verify:generated` 총 duration | <= 15s | PASS (~5s fixture) |
 | P04 | validation 30s hard timeout | `runCommand.ts` 의 `timeoutMs = 30_000` 기본값 + `runCommand.test.ts` timeout 분기 PASS | 30s default 적용 + 타임아웃 exit code 124 검증 PASS | PASS (G035) |
@@ -118,14 +118,15 @@ PASS  : C01 C02 C03 C04 C05 C06 C07 C08
         U01 U02 U03 U04 U05 U06 U07
         V01 V02 V03 V04 V05 V06 V07
         O01 O02 O03 O04 O05
-        P02 P03 P04 P05
+        P01 P02 P03 P04 P05
         A01 A02 A03 A04 A05
 FAIL  : (없음)
-TODO  : P01 (first token live smoke — DeepSeek live API 필요; CI 에서는
-        측정 불가, 수동 smoke 로 대체)
+TODO  : (없음)
+조건부 PASS : P01 (live smoke 는 DEEPSEEK_API_KEY 설정 시에만 실행. assertion
+              과 정적 가드는 항상 살아 있어 통과 기준이 약화되는 것을 막는다.)
 ```
 
-총 PASS: 42 / FAIL: 0 / 측정 보류: 1
+총 PASS: 43 / FAIL: 0 / 측정 보류: 0
 
 ## 4. FAIL → PASS 전환 이력 (G017–G027)
 

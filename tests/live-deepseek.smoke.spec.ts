@@ -34,7 +34,21 @@ test.describe('Live DeepSeek smoke', () => {
     await page
       .getByLabel('자동화 프롬프트 입력')
       .fill('primary 버튼 컴포넌트 생성, dark mode 지원, Vapor 토큰 준수');
+
+    // P01 — first token latency (submit 클릭 → assistant streaming bubble
+    // 가시화) 가 SLA 3 초 이하임을 실측한다. 사용자가 자동화 실행 클릭 후
+    // 3 초 안에 응답이 흘러나오기 시작하지 않으면 UX 가 "멈춘 것" 으로
+    // 인지된다. live DeepSeek 의 first token 은 보통 1.0-1.5 초.
+    const submitAt = Date.now();
     await page.getByRole('button', { name: '자동화 실행' }).click();
+    await page.locator('[data-role="assistant"]').first().waitFor({
+      state: 'visible',
+      timeout: 3_000,
+    });
+    const firstTokenMs = Date.now() - submitAt;
+    expect(firstTokenMs).toBeLessThan(3_000);
+    // 측정값을 stdout 에 기록 — CI 로그/release note 에서 추적 가능
+    process.stdout.write(`[P01] first-token latency: ${firstTokenMs}ms\n`);
 
     // user 메시지 노출
     await expect(page.locator('[data-role="user"]')).toBeVisible();

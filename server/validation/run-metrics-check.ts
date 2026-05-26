@@ -320,6 +320,25 @@ async function run(): Promise<void> {
     'timeoutMs = 30_000 default 또는 timeout 테스트 누락',
   );
 
+  // P01: live DeepSeek smoke 에 first-token latency assertion 이 살아 있는지
+  // 정적 보장. SLA: submit 클릭 → 첫 assistant token 가시화까지 < 3s. CI 에선
+  // API key 미설정 시 skip 되지만, 누군가 timing 측정을 빼면 smoke 본연의
+  // P01 책임이 사라지므로 정적 가드로 박는다.
+  let liveSmokeSrc = '';
+  try {
+    liveSmokeSrc = await readFile(join(ROOT, 'tests/live-deepseek.smoke.spec.ts'), 'utf8');
+  } catch {
+    liveSmokeSrc = '';
+  }
+  record(
+    /first-token/.test(liveSmokeSrc) &&
+      /toBeLessThan\(3_000\)/.test(liveSmokeSrc) &&
+      /firstTokenMs/.test(liveSmokeSrc),
+    'P01',
+    'first-token latency SLA assertion (< 3s)',
+    'tests/live-deepseek.smoke.spec.ts 에 firstTokenMs / toBeLessThan(3_000) 누락',
+  );
+
   // V07: Vapor `--vapor-size-space-*` 토큰이 실 paint 에서 nonzero 픽셀로
   // resolve 되는 것을 회귀 보장. Vapor 토큰은 `calc(var(--vapor-scale-factor)
   // * Npx)` 로 정의되므로 scale-factor 가 어떤 경로로도 set 되지 않으면
