@@ -665,17 +665,86 @@ function ArtifactCanvas({
   const previewOrigin = useMemo(() => createIsolatedPreviewOrigin(parentOrigin), [parentOrigin]);
   // 사용자가 명시적으로 다시 시도할 때 iframe 을 강제 재로드하기 위한 키.
   const [reloadKey, setReloadKey] = useState(0);
-  const previewSrc =
-    artifactSource && model.canRunReactPreview && model.metadataValidation.status !== 'fail'
-      ? `${previewOrigin}/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}&previewRunId=${encodeURIComponent(previewRunId)}&parentOrigin=${encodeURIComponent(parentOrigin)}&reload=${reloadKey}`
-      : undefined;
+  // 큰 artifact 본문은 query string 으로 싣지 못한다 (Node HTTP URL 길이 ~16KB
+  // 제한 → HPE_HEADER_OVERFLOW 431). POST 로 미리 캐시하고 짧은 token 만
+  // iframe URL 에 싣는다.
+  const canRender =
+    Boolean(artifactSource) &&
+    model.canRunReactPreview &&
+    model.metadataValidation.status !== 'fail';
+  const [artifactToken, setArtifactToken] = useState<string | undefined>();
+  const [artifactTokenError, setArtifactTokenError] = useState<string | undefined>();
+  useEffect(() => {
+    // 의도된 reset/refetch — async fetch 사이클 동안 fresh state 가 필요해
+    // 이펙트 내부 setState 가 불가피하다.
+    /* eslint-disable react-hooks/set-state-in-effect */
+    if (!canRender || !artifactSource) {
+      setArtifactToken(undefined);
+      setArtifactTokenError(undefined);
+      return;
+    }
+    let cancelled = false;
+    setArtifactToken(undefined);
+    setArtifactTokenError(undefined);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    void fetch(`${previewOrigin}/api/deepseek/preview`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ artifact: artifactSource }),
+    })
+      .then(async (response) => {
+        if (cancelled) return;
+        if (!response.ok) {
+          const text = await response.text().catch(() => '');
+          setArtifactTokenError(
+            `Preview cache failed (${response.status})${text ? `: ${text}` : ''}`,
+          );
+          return;
+        }
+        const payload = (await response.json()) as { token?: string };
+        if (cancelled) return;
+        if (payload?.token) {
+          setArtifactToken(payload.token);
+        } else {
+          setArtifactTokenError('Preview cache returned no token.');
+        }
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        // POST 실패는 fallback 으로 inline query string 시도 (작은 artifact
+        // 케이스). iframe 로드가 실패하면 timeout/postMessage 가드가 처리.
+        console.warn('[VaporCanvas] preview token POST failed, falling back to inline:', error);
+        setArtifactToken(undefined);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [artifactSource, canRender, previewOrigin, reloadKey]);
+
+  const previewSrc = canRender
+    ? artifactToken
+      ? `${previewOrigin}/api/deepseek/preview?token=${encodeURIComponent(artifactToken)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}&previewRunId=${encodeURIComponent(previewRunId)}&parentOrigin=${encodeURIComponent(parentOrigin)}&reload=${reloadKey}`
+      : artifactSource && artifactSource.length < 6000
+        ? `${previewOrigin}/api/deepseek/preview?artifact=${encodeURIComponent(artifactSource)}&variant=${encodeURIComponent(activeVariantName)}&theme=${theme}&previewRunId=${encodeURIComponent(previewRunId)}&parentOrigin=${encodeURIComponent(parentOrigin)}&reload=${reloadKey}`
+        : undefined
+    : undefined;
   const [previewState, setPreviewState] = useState<{
     src?: string;
     status: CanvasPreviewStatus;
     error?: string;
   }>({ status: 'loading' });
-  const previewStatus = previewState.src === previewSrc ? previewState.status : 'loading';
-  const previewError = previewState.src === previewSrc ? previewState.error : undefined;
+  const previewStatusRaw: CanvasPreviewStatus =
+    previewState.src === previewSrc ? previewState.status : 'loading';
+  // POST 토큰 발급이 실패하면 iframe 자체를 띄울 수 없으므로 fall-through
+  // 로 failed 상태를 보여준다. previewState.src 가 일치하지 않을 때 fallback
+  // 으로 token error 메시지를 노출.
+  const previewError = artifactTokenError
+    ? artifactTokenError
+    : previewState.src === previewSrc
+      ? previewState.error
+      : undefined;
+  const previewStatus: CanvasPreviewStatus =
+    artifactTokenError ? 'failed' : previewStatusRaw;
 
   useEffect(() => {
     if (!previewSrc) return;

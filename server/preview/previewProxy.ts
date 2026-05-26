@@ -7,17 +7,89 @@ import { parseGeneratedArtifact } from '../../src/agent/responseParser.ts';
 
 const CLEANUP_AFTER_MS = 60_000;
 
+/**
+ * In-memory artifact cache. iframe URL 에 artifact 본문을 직접 싣지 않고
+ * 짧은 token 만 사용하기 위함. Node HTTP 가 URL 길이를 ~16KB 로 제한
+ * (HPE_HEADER_OVERFLOW → 431) 해서 큰 컴포넌트 응답이 들어오면 iframe
+ * 자체 로드가 실패하는 회귀가 있었다. POST 로 본문을 미리 저장하고
+ * 토큰만 query string 에 실어 limit 을 회피한다.
+ */
+const ARTIFACT_CACHE = new Map<string, { markdown: string; expiresAt: number }>();
+const CACHE_TTL_MS = 5 * 60_000;
+
+function purgeExpired(): void {
+  const now = Date.now();
+  for (const [key, entry] of ARTIFACT_CACHE) {
+    if (entry.expiresAt <= now) ARTIFACT_CACHE.delete(key);
+  }
+}
+
+async function readBody(req: IncomingMessage, limit = 2 * 1024 * 1024): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const chunks: Buffer[] = [];
+    let total = 0;
+    req.on('data', (chunk: Buffer) => {
+      total += chunk.length;
+      if (total > limit) {
+        reject(new Error('payload too large'));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
 export async function handleArtifactPreview(
   req: IncomingMessage,
   res: ServerResponse,
 ): Promise<void> {
+  // POST = cache artifact 본문, 토큰만 반환. iframe URL 이 짧아져 Node
+  // HPE_HEADER_OVERFLOW (431) 회피.
+  if (req.method === 'POST') {
+    try {
+      purgeExpired();
+      const body = await readBody(req);
+      const payload = JSON.parse(body) as { artifact?: string };
+      const markdown = (payload.artifact ?? '').trim();
+      if (!markdown) {
+        send(res, 400, 'Missing artifact field');
+        return;
+      }
+      const token = randomUUID();
+      ARTIFACT_CACHE.set(token, { markdown, expiresAt: Date.now() + CACHE_TTL_MS });
+      res.statusCode = 200;
+      res.setHeader('Content-Type', 'application/json; charset=utf-8');
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.end(JSON.stringify({ token }));
+      return;
+    } catch (err) {
+      send(res, 400, err instanceof Error ? err.message : 'POST failed');
+      return;
+    }
+  }
   if (req.method !== 'GET') {
     send(res, 405, 'Method not allowed');
     return;
   }
 
   const url = new URL(req.url ?? '/', 'http://localhost');
-  const markdown = url.searchParams.get('artifact') ?? '';
+  const token = url.searchParams.get('token');
+  let markdown = '';
+  if (token) {
+    purgeExpired();
+    const cached = ARTIFACT_CACHE.get(token);
+    if (!cached) {
+      send(res, 404, 'Artifact token expired or unknown.');
+      return;
+    }
+    markdown = cached.markdown;
+  } else {
+    // 후방 호환: query string 으로 직접 받아온 케이스 (작은 fixture).
+    markdown = url.searchParams.get('artifact') ?? '';
+  }
   const variant = url.searchParams.get('variant') ?? 'Default';
   const theme = url.searchParams.get('theme') === 'dark' ? 'dark' : 'light';
   const previewRunId = url.searchParams.get('previewRunId') ?? '';

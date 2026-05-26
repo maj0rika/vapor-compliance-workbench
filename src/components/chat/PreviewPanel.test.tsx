@@ -210,6 +210,8 @@ describe('PreviewPanel', () => {
   });
 
   it('preview endpoint 실패를 Canvas failed state 로 표시한다', async () => {
+    // 첫 fetch 는 artifact token POST. 4xx 응답이면 token 발급 실패 →
+    // Canvas failed state + "Preview cache failed (422)..." 메시지.
     vi.mocked(fetch).mockResolvedValueOnce(new Response('Component artifact is required', {
       status: 422,
     }));
@@ -218,7 +220,7 @@ describe('PreviewPanel', () => {
 
     await screen.findByLabelText('미리보기 런타임: 실패');
     expect(
-      screen.getByText('Preview endpoint failed (422): Component artifact is required'),
+      screen.getByText(/Preview cache failed \(422\).*Component artifact is required/),
     ).toBeInTheDocument();
   });
 

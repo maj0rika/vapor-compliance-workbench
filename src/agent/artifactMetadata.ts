@@ -86,7 +86,7 @@ export function validateArtifactMetadata({
     }
   }
 
-  validateRawPropsShapes(rawObject, errors);
+  validateRawPropsShapes(rawObject, warnings, errors);
   validatePropsObject(metadata.defaultProps, 'defaultProps', warnings, errors);
 
   return buildResult(warnings, errors);
@@ -101,25 +101,33 @@ function parseRawMetadataObject(rawMetadata: string): Record<string, unknown> | 
   }
 }
 
-function validateRawPropsShapes(rawObject: Record<string, unknown>, errors: string[]): void {
+function validateRawPropsShapes(
+  rawObject: Record<string, unknown>,
+  warnings: string[],
+  errors: string[],
+): void {
   if ('defaultProps' in rawObject && !isPlainObject(rawObject.defaultProps)) {
     errors.push('defaultProps must be a plain object.');
   }
+  // variants 형태 위반은 warning 으로 강등 — 실 DeepSeek 응답이 가끔
+  // object 또는 nested 구조로 emit 해도 Canvas 마운트는 가능해야 한다.
+  // parseArtifactMetadata 는 Array.isArray 아닌 경우 variants 를 무시하므로
+  // defaultProps fallback 으로 동작.
   if ('variants' in rawObject && !Array.isArray(rawObject.variants)) {
-    errors.push('variants must be an array.');
+    warnings.push('variants is not an array; ignoring and using defaultProps only.');
     return;
   }
   if (!Array.isArray(rawObject.variants)) return;
   rawObject.variants.forEach((variant, index) => {
     if (!isPlainObject(variant)) {
-      errors.push(`variant at index ${index} must be a plain object.`);
+      warnings.push(`variant at index ${index} is not a plain object; skipped.`);
       return;
     }
     if (typeof variant.name !== 'string' || !variant.name.trim()) {
-      errors.push(`variant at index ${index} name must be a non-empty string.`);
+      warnings.push(`variant at index ${index} has no name; skipped.`);
     }
     if ('props' in variant && !isPlainObject(variant.props)) {
-      errors.push(`variant at index ${index} props must be a plain object.`);
+      warnings.push(`variant at index ${index} props is not a plain object; props ignored.`);
     }
   });
 }
