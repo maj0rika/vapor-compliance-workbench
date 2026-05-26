@@ -21,7 +21,9 @@ test.describe('visual regression', () => {
   test('(1) empty workbench', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto('/');
-    await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Vapor 디자인시스템 자동화 워크벤치' }),
+    ).toBeVisible();
     await expect(page).toHaveScreenshot('empty-workbench-1280.png', snapshotOptions);
   });
 
@@ -36,7 +38,7 @@ test.describe('visual regression', () => {
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
 
     // Canvas tab default 선택 상태 확인 후 screenshot
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveAttribute(
+    await expect(page.getByRole('tab', { name: '미리보기' })).toHaveAttribute(
       'aria-selected',
       'true',
     );
@@ -55,7 +57,7 @@ test.describe('visual regression', () => {
     });
     await expect(page.getByLabel('생성물 워크스페이스')).toBeVisible();
     // Canvas tab 이 없어야 함 (token-sync non-visual contract)
-    await expect(page.getByRole('tab', { name: 'Canvas' })).toHaveCount(0);
+    await expect(page.getByRole('tab', { name: '미리보기' })).toHaveCount(0);
 
     await page.waitForTimeout(500);
     await expect(page).toHaveScreenshot('token-sync-workspace-1280.png', snapshotOptions);
@@ -64,7 +66,9 @@ test.describe('visual regression', () => {
   test('(4) empty workbench at mobile 390', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto('/');
-    await expect(page.getByText('무엇을 자동화할까요?')).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Vapor 디자인시스템 자동화 워크벤치' }),
+    ).toBeVisible();
     await expect(page).toHaveScreenshot('empty-workbench-390.png', snapshotOptions);
   });
 
@@ -123,7 +127,7 @@ test.describe('visual regression', () => {
       .fill('wrong primaryExport metadata mismatch fixture');
     await page.getByRole('button', { name: '자동화 실행' }).click();
 
-    await expect(page.getByText('Metadata contract: FAIL').first()).toBeVisible({
+    await expect(page.getByText('메타데이터: 실패').first()).toBeVisible({
       timeout: 6000,
     });
     await expect(page.getByText('Canvas 사용 불가')).toBeVisible();

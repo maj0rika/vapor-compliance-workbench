@@ -67,7 +67,9 @@ test.describe('Vapor DS automation flow', () => {
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
-    await expect(workspace).toContainText('Typecheck: PASS');
+    await expect(workspace).toContainText('Typecheck: PASS', {
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
     await expect(workspace).toContainText('Vapor token usage: PASS');
   });
 
@@ -169,7 +171,9 @@ test.describe('Vapor DS automation flow', () => {
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
-    await expect(workspace).toContainText('Vapor token usage: PASS');
+    await expect(workspace).toContainText('Vapor token usage: PASS', {
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
   });
 
   test('a11y audit mode reviews an attached TSX component', async ({ page }) => {
@@ -191,7 +195,9 @@ test.describe('Vapor DS automation flow', () => {
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
-    await expect(workspace).toContainText('Axe: PASS');
+    await expect(workspace).toContainText('Axe: PASS', {
+      timeout: process.env.CI ? 60_000 : 20_000,
+    });
   });
 
   test('repeated file attachments respect maxFiles', async ({ page }) => {

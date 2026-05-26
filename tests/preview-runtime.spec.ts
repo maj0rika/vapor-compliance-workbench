@@ -98,12 +98,12 @@ test.describe('artifact canvas runtime', () => {
     await expect(
       page
         .getByRole('listitem')
-        .filter({ hasText: /Runtime Render: PASS.*2 metadata variants \(Default, Disabled\)/ }),
+        .filter({ hasText: /런타임 렌더: PASS.*2 metadata variants \(Default, Disabled\)/ }),
     ).toBeVisible();
     await expect(
       page
         .getByRole('listitem')
-        .filter({ hasText: /Axe: PASS.*2 metadata variants \(Default, Disabled\)/ }),
+        .filter({ hasText: /접근성: PASS.*2 metadata variants \(Default, Disabled\)/ }),
     ).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Cleanup: PASS$/ }),
@@ -231,7 +231,7 @@ test.describe('artifact canvas runtime', () => {
       timeout: process.env.CI ? 60_000 : 20_000,
     });
     await page.getByRole('tab', { name: '검증' }).click();
-    await expect(page.getByText(/메타데이터: 실패/).first()).toBeVisible();
+    await expect(page.getByText(/메타데이터 계약: 실패/).first()).toBeVisible();
     await expect(
       page.getByRole('listitem').filter({ hasText: /^Runtime Render: FAIL$/ }),
     ).toBeVisible({ timeout: 10000 });
