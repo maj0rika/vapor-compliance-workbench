@@ -141,13 +141,27 @@ export function artifactToMarkdown(artifact: GeneratedArtifact): string {
  * DeepSeek (특히 보수 응답) 가 `<artifact-meta>` 안에 ```json ... ``` 으로
  * JSON 을 감싸서 emit 하는 경우가 관측됨. JSON.parse 가 백틱 토큰에서
  * 즉시 실패해 메타데이터 계약이 깨지고 Canvas 가 마운트되지 않는다.
- * 코드 펜스가 있을 때만 안쪽 본문을 사용하고, 없으면 원본을 그대로
- * 돌려주어 기존 deterministic fixture 와 호환 유지.
+ *
+ * 관측된 케이스:
+ *   1) balanced — ```json ... ``` 양쪽 모두 emit (이상적)
+ *   2) leading-only — ```json 으로 시작하지만 닫는 펜스가 없음
+ *      (모델이 artifact-meta 종료 태그가 곧 코드 종료라고 판단)
+ *   3) trailing-only — 본문이 ``` 만으로 끝남
+ *
+ * 1~3 모두 안쪽 JSON 만 뽑아낸다. 펜스가 전혀 없으면 원본을 그대로
+ * 돌려주어 deterministic fixture 와 호환 유지.
  */
 function stripJsonCodeFence(raw: string): string {
-  const trimmed = raw.trim();
-  const fence = trimmed.match(/^```(?:json|json5)?\s*\n([\s\S]*?)\n?```$/i);
-  return fence ? fence[1].trim() : trimmed;
+  let trimmed = raw.trim();
+  const leading = trimmed.match(/^```(?:json|json5)?\s*\r?\n?/i);
+  const trailing = /\r?\n?```\s*$/i;
+  if (leading) {
+    trimmed = trimmed.slice(leading[0].length);
+  }
+  if (trailing.test(trimmed)) {
+    trimmed = trimmed.replace(trailing, '');
+  }
+  return trimmed.trim();
 }
 
 function parseArtifactMetadata(markdown: string): {
