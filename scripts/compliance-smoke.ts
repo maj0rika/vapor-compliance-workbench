@@ -1,6 +1,6 @@
 /**
  * Headless smoke test for CompliancePage.
- * - 4 viewports × 2 themes (light/dark) = 8 captures
+ * - 5 viewports × 2 themes (light/dark) = 10 captures
  * - Asserts no console error per (viewport, theme)
  * - Asserts no horizontal overflow (document.scrollWidth - innerWidth <= 1)
  * - Captures screenshot per (viewport, theme)
@@ -36,6 +36,7 @@ const viewports = [
   { name: 'tablet-768', width: 768, height: 1024 },
   { name: 'desktop-1280', width: 1280, height: 900 },
   { name: 'desktop-1440', width: 1440, height: 900 },
+  { name: 'desktop-1480', width: 1480, height: 900 },
 ];
 
 const themes: Theme[] = ['light', 'dark'];
