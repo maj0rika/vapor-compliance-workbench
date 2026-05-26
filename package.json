@@ -1,5 +1,6 @@
 {
   "name": "vapor-prompt-input-layer",
+  "description": "Vapor Design System 적용 품질을 deterministic하게 검사하는 컴플라이언스 감사 도구",
   "private": true,
   "version": "0.0.0",
   "type": "module",
