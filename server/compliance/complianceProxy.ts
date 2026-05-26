@@ -2,6 +2,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import { collectFileSignals, GOVERNED_SCAN_PATHS } from './collectFileSignals';
 import { createComplianceReport } from './createComplianceReport';
 import { runEslintJson } from './runEslint';
+import { readBrowserSmokeResult } from './readBrowserResults';
 
 /**
  * Vite dev middleware: GET /api/compliance/report → JSON ComplianceReport.
@@ -39,7 +40,8 @@ export async function handleComplianceReport(
         eslintErr instanceof Error ? eslintErr.message : eslintErr,
       );
     }
-    const report = createComplianceReport(signals, { eslintMessages });
+    const browserSmoke = readBrowserSmokeResult(process.cwd());
+    const report = createComplianceReport(signals, { eslintMessages, browserSmoke });
     res.statusCode = 200;
     res.setHeader('content-type', 'application/json; charset=utf-8');
     res.setHeader('cache-control', 'no-store');

@@ -8,10 +8,13 @@ import { checkAccessibility } from '../../src/compliance/rules/accessibilityRule
 import { checkResponsive } from '../../src/compliance/rules/responsiveRules.ts';
 import { checkDocumentation } from '../../src/compliance/rules/documentationRules.ts';
 import type { FileSignals } from './collectFileSignals.ts';
+import type { BrowserSmokeResult } from './readBrowserResults.ts';
 
 export type ReportInputs = {
   /** ESLint jsx-a11y messages, or undefined to skip accessibility gate. */
   eslintMessages?: ESLintMessage[];
+  /** Browser smoke result from scripts/compliance-smoke.ts, or undefined to skip layout/responsive gates. */
+  browserSmoke?: BrowserSmokeResult;
 };
 
 /**
@@ -23,11 +26,19 @@ export function createComplianceReport(
   inputs: ReportInputs = {},
 ): ComplianceReport {
   const gates = [
-    checkOverflow({}),
+    checkOverflow(
+      inputs.browserSmoke
+        ? { overflowDetected: inputs.browserSmoke.anyOverflow }
+        : {},
+    ),
     checkVaporComponents({ source: signals.combinedSource }),
     checkTokens({ source: signals.combinedSource }),
     checkAccessibility({ eslintMessages: inputs.eslintMessages }),
-    checkResponsive({}),
+    checkResponsive(
+      inputs.browserSmoke
+        ? { testedBreakpoints: inputs.browserSmoke.testedBreakpoints }
+        : {},
+    ),
     checkDocumentation({
       readmeContent: signals.readmeContent,
       vaporComplianceDocExists: signals.vaporComplianceDocExists,

@@ -8,12 +8,22 @@
  * Requires dev server already running on http://127.0.0.1:5180
  */
 import { chromium } from '@playwright/test';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 const URL = process.env.SMOKE_URL ?? 'http://127.0.0.1:5180';
 const OUT = resolve('test-results', 'compliance-smoke');
 mkdirSync(OUT, { recursive: true });
+
+type ViewportResult = {
+  name: string;
+  width: number;
+  height: number;
+  docOverflow: number;
+  bodyOverflow: number;
+  consoleErrors: number;
+  passed: boolean;
+};
 
 const viewports = [
   { name: 'mobile-390', width: 390, height: 800 },
@@ -24,6 +34,7 @@ const viewports = [
 
 const browser = await chromium.launch();
 let allOk = true;
+const results: ViewportResult[] = [];
 
 for (const vp of viewports) {
   const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height } });
@@ -51,6 +62,16 @@ for (const vp of viewports) {
   const status = okOverflow && okErrors ? 'PASS' : 'FAIL';
   if (status !== 'PASS') allOk = false;
 
+  results.push({
+    name: vp.name,
+    width: vp.width,
+    height: vp.height,
+    docOverflow: overflow.docOverflow,
+    bodyOverflow: overflow.bodyOverflow,
+    consoleErrors: errors.length,
+    passed: status === 'PASS',
+  });
+
   console.log(
     `[${vp.name}] ${status} doc=${overflow.docOverflow} body=${overflow.bodyOverflow} errors=${errors.length}`,
   );
@@ -60,4 +81,22 @@ for (const vp of viewports) {
 }
 
 await browser.close();
+
+const resultJson = resolve(OUT, 'result.json');
+writeFileSync(
+  resultJson,
+  JSON.stringify(
+    {
+      generatedAt: new Date().toISOString(),
+      url: URL,
+      anyOverflow: results.some((r) => r.docOverflow > 1 || r.bodyOverflow > 1),
+      testedBreakpoints: results.map((r) => r.name),
+      viewports: results,
+    },
+    null,
+    2,
+  ),
+);
+console.log(`-> ${resultJson}`);
+
 process.exit(allOk ? 0 : 1);

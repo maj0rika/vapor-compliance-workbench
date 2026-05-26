@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 import { collectFileSignals, GOVERNED_SCAN_PATHS, type ScanScope } from './collectFileSignals.ts';
 import { createComplianceReport } from './createComplianceReport.ts';
 import { runEslintJson } from './runEslint.ts';
+import { readBrowserSmokeResult } from './readBrowserResults.ts';
 
 /**
  * Node-runnable entry point for the compliance engine.
@@ -33,7 +34,8 @@ try {
   );
 }
 
-const report = createComplianceReport(signals, { eslintMessages });
+const browserSmoke = readBrowserSmokeResult(projectRoot);
+const report = createComplianceReport(signals, { eslintMessages, browserSmoke });
 
 process.stdout.write(JSON.stringify(report, null, 2) + '\n');
 
