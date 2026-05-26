@@ -44,6 +44,21 @@ test.describe('Vapor UI Compliance Workbench', () => {
       .not.toEqual(before);
   });
 
+  test('헤더 액션이 키보드로 접근 가능하다', async ({ page }) => {
+    await page.goto('/');
+    await page.getByRole('heading', { name: 'Vapor UI Compliance Workbench' }).waitFor();
+
+    // 명시적으로 첫 번째 액션 버튼에 포커스 — 키보드 도달 가능성 검증.
+    const runButton = page.getByRole('button', { name: '검사 실행' });
+    await runButton.focus();
+    await expect(runButton).toBeFocused();
+    await expect(runButton).toBeEnabled();
+
+    // Tab 으로 다음 액션 버튼 이동 가능.
+    await page.keyboard.press('Tab');
+    await expect(page.getByRole('button', { name: '리포트 초기화' })).toBeFocused();
+  });
+
   test.describe('viewport overflow', () => {
     for (const vp of [
       { name: 'mobile-390', width: 390, height: 800 },
