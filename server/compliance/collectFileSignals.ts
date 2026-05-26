@@ -10,6 +10,10 @@ export type FileSignals = {
   readmeContent: string | undefined;
   /** Whether docs/vapor-compliance.md exists */
   vaporComplianceDocExists: boolean;
+  /** tsconfig.app.json raw text, or undefined if not found */
+  tsconfigText: string | undefined;
+  /** package.json scripts keys, or undefined if not found */
+  scriptNames: string[] | undefined;
 };
 
 const SOURCE_EXTENSIONS = new Set(['.ts', '.tsx']);
@@ -135,10 +139,27 @@ export function collectFileSignals(
     vaporComplianceDocExists = false;
   }
 
+  let tsconfigText: string | undefined;
+  try {
+    tsconfigText = readFileSync(join(projectRoot, 'tsconfig.app.json'), 'utf-8');
+  } catch {
+    tsconfigText = undefined;
+  }
+
+  let scriptNames: string[] | undefined;
+  try {
+    const pkg = JSON.parse(readFileSync(join(projectRoot, 'package.json'), 'utf-8'));
+    scriptNames = Object.keys(pkg.scripts ?? {});
+  } catch {
+    scriptNames = undefined;
+  }
+
   return {
     combinedSource,
     scannedFiles: scannedFiles.map((f) => f.replace(projectRoot + '/', '')),
     readmeContent,
     vaporComplianceDocExists,
+    tsconfigText,
+    scriptNames,
   };
 }

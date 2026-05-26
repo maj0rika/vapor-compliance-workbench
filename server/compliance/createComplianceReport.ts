@@ -7,6 +7,7 @@ import { checkTokens } from '../../src/compliance/rules/tokenRules.ts';
 import { checkAccessibility } from '../../src/compliance/rules/accessibilityRules.ts';
 import { checkResponsive } from '../../src/compliance/rules/responsiveRules.ts';
 import { checkDocumentation } from '../../src/compliance/rules/documentationRules.ts';
+import { checkCodeQuality } from '../../src/compliance/rules/codeQualityRules.ts';
 import type { FileSignals } from './collectFileSignals.ts';
 import type { BrowserSmokeResult } from './readBrowserResults.ts';
 
@@ -42,6 +43,11 @@ export function createComplianceReport(
     checkDocumentation({
       readmeContent: signals.readmeContent,
       vaporComplianceDocExists: signals.vaporComplianceDocExists,
+    }),
+    checkCodeQuality({
+      tsconfigText: signals.tsconfigText,
+      scriptNames: signals.scriptNames,
+      readmeLength: signals.readmeContent?.length,
     }),
   ];
 
