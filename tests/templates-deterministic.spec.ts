@@ -126,4 +126,31 @@ test.describe('templates-deterministic', () => {
 
     expect(chatCalls).toBe(0);
   });
+
+  // (E) Data Table — component mode, sortable DataTable artifact (regression for issue #4)
+  test('(E) Data Table fixture renders DataTable component (not Button)', async ({ page }) => {
+    let chatCalls = 0;
+    page.on('request', (req) => {
+      if (req.url().includes('/api/deepseek/chat')) chatCalls += 1;
+    });
+
+    await page.goto('/');
+    await page.getByRole('button', { name: 'Data Table' }).click();
+
+    await expect(page.getByText('Deterministic fixture', { exact: true })).toBeVisible({ timeout: 6000 });
+
+    const workspace = page.getByLabel('생성물 워크스페이스');
+    await expect(workspace).toBeVisible();
+
+    // Component tab must show DataTable, not the Button fixture
+    await page.getByRole('tab', { name: 'Component' }).click();
+    await expect(workspace).toContainText('export function DataTable');
+    await expect(workspace).not.toContainText('export function PrimaryActionButton');
+
+    // Story and Test tabs present
+    await expect(page.getByRole('tab', { name: 'Story' })).toBeVisible();
+    await expect(page.getByRole('tab', { name: 'Test', exact: true })).toBeVisible();
+
+    expect(chatCalls).toBe(0);
+  });
 });

@@ -169,6 +169,242 @@ Uses @vapor-ui/core Button and colorPalette instead of raw color values.
 </notes>
 `;
 
+const DATA_TABLE_ARTIFACT = `<artifact-meta>
+{
+  "componentName": "DataTable",
+  "primaryExport": "DataTable",
+  "defaultProps": {
+    "columns": [
+      { "key": "name", "label": "이름" },
+      { "key": "role", "label": "역할" },
+      { "key": "score", "label": "점수" }
+    ],
+    "rows": [
+      { "name": "Anna", "role": "Engineer", "score": 92 },
+      { "name": "Brian", "role": "Designer", "score": 88 },
+      { "name": "Carol", "role": "PM", "score": 95 }
+    ],
+    "defaultSortKey": "name"
+  },
+  "variants": [
+    { "name": "Default sort by name", "props": {
+      "columns": [
+        { "key": "name", "label": "이름" },
+        { "key": "role", "label": "역할" },
+        { "key": "score", "label": "점수" }
+      ],
+      "rows": [
+        { "name": "Anna", "role": "Engineer", "score": 92 },
+        { "name": "Brian", "role": "Designer", "score": 88 },
+        { "name": "Carol", "role": "PM", "score": 95 }
+      ],
+      "defaultSortKey": "name"
+    } },
+    { "name": "Sorted by score desc", "props": {
+      "columns": [
+        { "key": "name", "label": "이름" },
+        { "key": "role", "label": "역할" },
+        { "key": "score", "label": "점수" }
+      ],
+      "rows": [
+        { "name": "Anna", "role": "Engineer", "score": 92 },
+        { "name": "Brian", "role": "Designer", "score": 88 },
+        { "name": "Carol", "role": "PM", "score": 95 }
+      ],
+      "defaultSortKey": "score",
+      "defaultDirection": "desc"
+    } }
+  ]
+}
+</artifact-meta>
+
+<artifact type="component" filename="DataTable.tsx">
+\`\`\`tsx
+import { useMemo, useState } from 'react';
+
+export type DataTableColumn = {
+  key: string;
+  label: string;
+};
+
+export type DataTableRow = Record<string, string | number>;
+
+export type DataTableProps = {
+  columns: DataTableColumn[];
+  rows: DataTableRow[];
+  defaultSortKey?: string;
+  defaultDirection?: 'asc' | 'desc';
+};
+
+export function DataTable({
+  columns,
+  rows,
+  defaultSortKey,
+  defaultDirection = 'asc',
+}: DataTableProps) {
+  const [sortKey, setSortKey] = useState<string | undefined>(defaultSortKey);
+  const [direction, setDirection] = useState<'asc' | 'desc'>(defaultDirection);
+
+  const sorted = useMemo(() => {
+    if (!sortKey) return rows;
+    const copy = [...rows];
+    const multiplier = direction === 'asc' ? 1 : -1;
+    copy.sort((a, b) => {
+      const av = a[sortKey];
+      const bv = b[sortKey];
+      if (av === bv) return 0;
+      return (av > bv ? 1 : -1) * multiplier;
+    });
+    return copy;
+  }, [rows, sortKey, direction]);
+
+  const handleHeaderClick = (key: string) => {
+    if (sortKey === key) {
+      setDirection((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortKey(key);
+      setDirection('asc');
+    }
+  };
+
+  return (
+    <table className="w-full border-collapse text-left">
+      <thead>
+        <tr>
+          {columns.map((column) => {
+            const ariaSort =
+              sortKey === column.key
+                ? direction === 'asc'
+                  ? 'ascending'
+                  : 'descending'
+                : 'none';
+            return (
+              <th
+                key={column.key}
+                scope="col"
+                aria-sort={ariaSort}
+                className="border-b border-v-normal p-v-150"
+              >
+                <button
+                  type="button"
+                  onClick={() => handleHeaderClick(column.key)}
+                  className="inline-flex items-center gap-v-50 font-medium"
+                >
+                  {column.label}
+                  {sortKey === column.key && (
+                    <span aria-hidden="true">{direction === 'asc' ? '▲' : '▼'}</span>
+                  )}
+                </button>
+              </th>
+            );
+          })}
+        </tr>
+      </thead>
+      <tbody>
+        {sorted.map((row, index) => (
+          <tr key={index}>
+            {columns.map((column) => (
+              <td key={column.key} className="border-b border-v-normal p-v-150">
+                {row[column.key]}
+              </td>
+            ))}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
+\`\`\`
+</artifact>
+
+<artifact type="story" filename="DataTable.stories.tsx">
+\`\`\`tsx
+import type { Meta, StoryObj } from '@storybook/react';
+import { DataTable } from './DataTable';
+
+const meta = {
+  title: 'Vapor Automation/DataTable',
+  component: DataTable,
+  args: {
+    columns: [
+      { key: 'name', label: '이름' },
+      { key: 'role', label: '역할' },
+      { key: 'score', label: '점수' },
+    ],
+    rows: [
+      { name: 'Anna', role: 'Engineer', score: 92 },
+      { name: 'Brian', role: 'Designer', score: 88 },
+      { name: 'Carol', role: 'PM', score: 95 },
+    ],
+  },
+} satisfies Meta<typeof DataTable>;
+
+export default meta;
+type Story = StoryObj<typeof meta>;
+
+export const SortedByName: Story = { args: { defaultSortKey: 'name' } };
+export const SortedByScoreDesc: Story = {
+  args: { defaultSortKey: 'score', defaultDirection: 'desc' },
+};
+\`\`\`
+</artifact>
+
+<artifact type="test" filename="DataTable.test.tsx">
+\`\`\`tsx
+import { render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, expect, it } from 'vitest';
+import { DataTable } from './DataTable';
+
+const columns = [
+  { key: 'name', label: '이름' },
+  { key: 'score', label: '점수' },
+];
+
+const rows = [
+  { name: 'Anna', score: 92 },
+  { name: 'Brian', score: 88 },
+  { name: 'Carol', score: 95 },
+];
+
+describe('DataTable', () => {
+  it('renders all rows', () => {
+    render(<DataTable columns={columns} rows={rows} />);
+    expect(screen.getAllByRole('row')).toHaveLength(rows.length + 1); // header + body rows
+  });
+
+  it('sorts rows when a column header is clicked', async () => {
+    render(<DataTable columns={columns} rows={rows} />);
+    const headerButton = screen.getByRole('button', { name: /점수/ });
+
+    await userEvent.click(headerButton);
+
+    const bodyRows = screen.getAllByRole('row').slice(1);
+    const firstScore = within(bodyRows[0]).getAllByRole('cell')[1].textContent;
+    expect(firstScore).toBe('88');
+  });
+
+  it('exposes aria-sort on the active column header', async () => {
+    render(<DataTable columns={columns} rows={rows} defaultSortKey="name" />);
+    const nameHeader = screen.getByRole('columnheader', { name: /이름/ });
+    expect(nameHeader).toHaveAttribute('aria-sort', 'ascending');
+  });
+});
+\`\`\`
+</artifact>
+
+<notes type="a11y">
+Each header exposes aria-sort (ascending/descending/none) so screen readers
+report the active sort state. Header sort buttons are real <button> elements
+so keyboard activation works without extra handlers.
+</notes>
+
+<notes type="token">
+Borders and spacing reference Vapor tokens (border-v-normal, p-v-150). No raw
+hex colors or magic-number paddings are introduced.
+</notes>
+`;
+
 const TOKEN_ARTIFACT = `<artifact type="component" filename="figmaToVaporTokenMap.ts">
 \`\`\`ts
 export const figmaToVaporTokenMap = {
@@ -635,7 +871,7 @@ export function selectScriptByTemplateKey(key: TemplateKey): AgentScript {
     case 'primary-button':
       return { reply: 'Primary Button deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: COMPONENT_ARTIFACT };
     case 'data-table':
-      return { reply: 'Data Table deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: COMPONENT_ARTIFACT };
+      return { reply: 'Data Table deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: DATA_TABLE_ARTIFACT };
     case 'token-sync':
       return { reply: 'Token Sync deterministic fixture 를 로드했습니다. (Deterministic fixture)', draft: TOKEN_ARTIFACT };
     case 'a11y-fix':
