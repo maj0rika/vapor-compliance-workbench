@@ -104,6 +104,27 @@ test.describe('workbench E2E — natural language', () => {
     await expect(page.getByTestId('workspace-action-approve')).toHaveCount(0);
   });
 
+  test('(5) 디버그 탭 — agent client trace (request payload + raw response)', async ({
+    page,
+  }) => {
+    await mockDeepSeekChat(page);
+
+    await page.goto('/');
+    await page
+      .getByLabel('자동화 프롬프트 입력')
+      .fill('Primary 버튼 컴포넌트 생성');
+    await page.getByRole('button', { name: '자동화 실행' }).click();
+
+    const debugTab = page.getByRole('tab', { name: '디버그' });
+    await expect(debugTab).toBeVisible({ timeout: 10_000 });
+    await debugTab.click();
+
+    await expect(page.getByTestId('debug-trace-status')).toHaveText(/완료|오류/);
+    await expect(page.getByTestId('debug-request-body')).toContainText('Primary 버튼');
+    // mock SSE 응답은 artifact 본문을 포함한다.
+    await expect(page.getByTestId('debug-response-body')).toContainText('artifact');
+  });
+
   test('(4) viewport 1480: 자연어 component 흐름 후에도 horizontal overflow 없음', async ({
     page,
   }) => {

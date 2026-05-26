@@ -24,6 +24,7 @@ export type {
 } from './artifactMetadata';
 export type { MachineEvent } from './messageMachine';
 export type {
+  AgentDebugTrace,
   AgentEvent,
   AgentMode,
   AgentRequest,

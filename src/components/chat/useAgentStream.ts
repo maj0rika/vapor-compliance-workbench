@@ -96,6 +96,11 @@ export function useAgentStream(client: AgentClient): UseAgentStreamResult {
                 errorMessage: event.message,
               });
               break;
+            case 'debug':
+              // agent client 가 요청 종료 직후 emit. PreviewPanel 의 "디버그"
+              // 탭이 이 trace 를 그대로 노출한다.
+              patchMessage(assistantId, { debugTrace: event.trace });
+              break;
           }
         }
       } finally {

@@ -99,6 +99,20 @@ export class DeepSeekAgentClient implements AgentClient {
     request: AgentRequest,
     signal?: AbortSignal,
   ): AsyncIterable<AgentEvent> {
+    const startedAt = Date.now();
+    let responseText = '';
+    let lastErrorMessage: string | undefined;
+    const buildDebug = (status: 'done' | 'error'): AgentEvent => ({
+      type: 'debug',
+      trace: {
+        request,
+        responseText,
+        durationMs: Date.now() - startedAt,
+        status,
+        errorMessage: status === 'error' ? lastErrorMessage : undefined,
+        endpoint: this.endpoint,
+      },
+    });
     try {
       const response = await fetch(this.endpoint, {
         method: 'POST',
@@ -108,17 +122,18 @@ export class DeepSeekAgentClient implements AgentClient {
       });
 
       if (!response.ok) {
-        const message = await readErrorMessage(response);
-        yield { type: 'error', message };
+        lastErrorMessage = await readErrorMessage(response);
+        yield buildDebug('error');
+        yield { type: 'error', message: lastErrorMessage };
         return;
       }
-
       if (!response.body) {
-        yield { type: 'error', message: 'DeepSeek stream is empty.' };
+        lastErrorMessage = 'DeepSeek stream is empty.';
+        yield buildDebug('error');
+        yield { type: 'error', message: lastErrorMessage };
         return;
       }
 
-      let responseText = '';
       let emittedConversationText = '';
       let emittedDone = false;
       let fallbackEmitted = false;
@@ -151,6 +166,10 @@ export class DeepSeekAgentClient implements AgentClient {
           if (fb) yield fb;
           yield* this.buildDraftEvents(responseText, signal);
           yield event;
+          yield buildDebug('done');
+        } else if (event.type === 'error') {
+          lastErrorMessage = event.message;
+          yield event;
         } else {
           yield event;
         }
@@ -161,13 +180,18 @@ export class DeepSeekAgentClient implements AgentClient {
         if (fb) yield fb;
         yield* this.buildDraftEvents(responseText, signal);
         yield { type: 'done' };
+        yield buildDebug('done');
+      } else if (lastErrorMessage) {
+        yield buildDebug('error');
       }
     } catch (err) {
       if (signal?.aborted || isAbortError(err)) return;
+      lastErrorMessage = err instanceof Error ? err.message : 'DeepSeek request failed.';
       yield {
         type: 'error',
-        message: err instanceof Error ? err.message : 'DeepSeek request failed.',
+        message: lastErrorMessage,
       };
+      yield buildDebug('error');
     }
   }
 

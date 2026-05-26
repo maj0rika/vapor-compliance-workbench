@@ -47,6 +47,8 @@ export type ChatMessage = {
   errorMessage?: string;
   /** 재생성 시 같은 mode/첨부 맥락을 유지하기 위한 원본 요청. */
   request?: AgentRequest;
+  /** 디버그 탭에 노출할 실제 요청/응답 trace. agent client 가 채운다. */
+  debugTrace?: AgentDebugTrace;
 };
 
 /** 멀티턴 컨텍스트로 모델에 함께 전달되는 직전 대화 turn. */
@@ -83,8 +85,30 @@ export type AgentRequest = {
  * - done : 정상 종료
  * - error: 오류 종료
  */
+/**
+ * DeepSeek 요청/응답을 한 곳에서 볼 수 있는 디버그 trace.
+ *
+ * 화면의 "디버그" 탭이 이 객체를 그대로 렌더해 사용자가 실제로 어떤
+ * AgentRequest 가 전송되고 raw SSE 본문이 어떻게 합쳐졌는지 확인한다.
+ * 검증 / fixture / sample 흐름과 무관하게 DeepSeek 호출 1건마다 1개 생성.
+ */
+export type AgentDebugTrace = {
+  /** 전송된 AgentRequest 원본 (priorTurns/attachments 포함). */
+  request: AgentRequest;
+  /** SSE 토큰을 모두 이어붙인 raw 본문 (artifact 태그 포함). */
+  responseText: string;
+  /** 요청 시작부터 done/error 까지 걸린 wall-clock 밀리초. */
+  durationMs: number;
+  /** 종료 상태. error 일 경우 errorMessage 가 채워진다. */
+  status: 'done' | 'error';
+  errorMessage?: string;
+  /** 사용된 endpoint. mock 흐름에서는 'mock' 으로 표기. */
+  endpoint: string;
+};
+
 export type AgentEvent =
   | { type: 'token'; value: string }
   | { type: 'draft'; value: string; replace?: boolean; source?: string }
   | { type: 'done' }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string }
+  | { type: 'debug'; trace: AgentDebugTrace };

@@ -42,6 +42,7 @@ export class MockAgentClient implements AgentClient {
     request: AgentRequest,
     signal?: AbortSignal,
   ): AsyncIterable<AgentEvent> {
+    const startedAt = Date.now();
     const script = request.repairIntent
       ? {
           reply:
@@ -50,14 +51,31 @@ export class MockAgentClient implements AgentClient {
         }
       : selectScript(request.text, request.mode);
 
+    let responseText = '';
+    let lastErrorMessage: string | undefined;
+    const buildDebug = (status: 'done' | 'error'): AgentEvent => ({
+      type: 'debug',
+      trace: {
+        request,
+        responseText,
+        durationMs: Date.now() - startedAt,
+        status,
+        errorMessage: status === 'error' ? lastErrorMessage : undefined,
+        endpoint: 'mock',
+      },
+    });
+
     try {
       for (const token of tokenize(script.reply)) {
         await delay(TOKEN_DELAY_MS, signal);
+        responseText += token;
         yield { type: 'token', value: token };
       }
 
       if (script.error) {
+        lastErrorMessage = script.error;
         yield { type: 'error', message: script.error };
+        yield buildDebug('error');
         return;
       }
 
@@ -72,6 +90,7 @@ export class MockAgentClient implements AgentClient {
           .replace('- Typecheck: CHECK', '- Typecheck: PASS')
           .replace('- Unit: CHECK', '- Unit: PASS')
           .replace('- Axe: CHECK', '- Axe: PASS');
+        responseText += `\n\n${script.draft}`;
         for (const token of tokenize(preview)) {
           await delay(TOKEN_DELAY_MS, signal);
           yield { type: 'draft', value: token, source: script.draft };
@@ -79,6 +98,7 @@ export class MockAgentClient implements AgentClient {
       }
 
       yield { type: 'done' };
+      yield buildDebug('done');
     } catch (err) {
       // abort 는 정상적인 취소 경로 — 조용히 이터레이터를 종료한다.
       // 소비자는 signal.aborted 를 확인해 'cancelled' 로 전이한다.

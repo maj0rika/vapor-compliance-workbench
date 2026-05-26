@@ -8,6 +8,9 @@ async function collect(
 ): Promise<AgentEvent[]> {
   const events: AgentEvent[] = [];
   for await (const event of iterable) {
+    // 'debug' 는 UI 디버그 탭 전용 metadata. 라이프사이클 계약 테스트에서는
+    // 무시한다 — done/error 순서/카운트 단언이 깨지지 않도록.
+    if (event.type === 'debug') continue;
     onEach?.(event, events.length);
     events.push(event);
   }

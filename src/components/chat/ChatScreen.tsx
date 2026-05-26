@@ -314,6 +314,7 @@ export function ChatScreen({
                 onApprovalChange={(approved) => {
                   setApprovedArtifactRunId(approved ? artifactRunId : undefined);
                 }}
+                debugTrace={draftMessage?.debugTrace}
                 onClose={() => setClosedDraftId(draftId)}
               />
             </div>

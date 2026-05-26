@@ -2,7 +2,7 @@ import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import { Badge, Button, IconButton, Text } from '@vapor-ui/core';
 import { CloseOutlineIcon, CopyOutlineIcon } from '@vapor-ui/icons';
 import { parseGeneratedArtifact, type AgentMode, type ArtifactProvenance, type GeneratedArtifact } from '../../agent';
-import type { MetadataValidationResult } from '../../agent';
+import type { AgentDebugTrace, MetadataValidationResult } from '../../agent';
 import { Markdown } from './Markdown';
 // G013.1/G015: 두 패널 모두 token-sync / metadata 탭이 활성일 때만 필요하므로
 // React.lazy 로 분리해 초기 JS bundle 예산 (200KB gzip) 을 보호한다.
@@ -18,7 +18,15 @@ const ValidationPanel = lazy(() =>
 );
 import type { RemoteValidationResult } from './ValidationPanel';
 
-type ArtifactTab = 'canvas' | 'metadata' | 'token-mapping' | 'component' | 'story' | 'test' | 'validation';
+type ArtifactTab =
+  | 'canvas'
+  | 'metadata'
+  | 'token-mapping'
+  | 'component'
+  | 'story'
+  | 'test'
+  | 'validation'
+  | 'debug';
 
 type ArtifactSection = {
   id: ArtifactTab;
@@ -69,6 +77,11 @@ export type PreviewPanelProps = {
   maxRepairAttemptsPerChain?: number;
   /** 현재 artifactRun 의 로컬 승인 상태 변화를 상위로 전달한다. */
   onApprovalChange?: (approved: boolean) => void;
+  /**
+   * agent client (DeepSeek/Mock) 가 emit 한 디버그 trace.
+   * 존재 시 "디버그" 탭이 노출되어 raw request/response 를 검토할 수 있다.
+   */
+  debugTrace?: AgentDebugTrace;
   onClose: () => void;
   canClose?: boolean;
 };
@@ -83,6 +96,7 @@ const TAB_LABELS: Record<ArtifactTab, string> = {
   story: '스토리',
   test: '테스트',
   validation: '검증',
+  debug: '디버그',
 };
 
 const GATE_LABELS: Record<string, string> = {
@@ -138,6 +152,7 @@ export function PreviewPanel({
   repairChainAttempts = 0,
   maxRepairAttemptsPerChain = Number.POSITIVE_INFINITY,
   onApprovalChange,
+  debugTrace,
   onClose,
   canClose = true,
 }: PreviewPanelProps) {
@@ -196,11 +211,17 @@ export function PreviewPanel({
   const tokenMappingSection = isTokenSync
     ? { id: 'token-mapping' as const, label: TAB_LABELS['token-mapping'], content: '' }
     : undefined;
+  // 디버그 탭: agent client 가 trace 를 채워 보낼 때만 노출. content 는
+  // 탭패널이 직접 렌더하므로 빈 문자열.
+  const debugSection = debugTrace
+    ? { id: 'debug' as const, label: TAB_LABELS.debug, content: '' }
+    : undefined;
   const visibleSections = [
     ...(canvasSection ? [canvasSection] : []),
     ...(tokenMappingSection ? [tokenMappingSection] : []),
     ...(metadataSection ? [metadataSection] : []),
     ...allCodeSections,
+    ...(debugSection ? [debugSection] : []),
   ];
   const active = visibleSections.find((section) => section.id === activeTab) ?? visibleSections[0];
 
@@ -533,6 +554,8 @@ export function PreviewPanel({
               }
             />
           </Suspense>
+        ) : active?.id === 'debug' && debugTrace ? (
+          <DebugTracePanel trace={debugTrace} />
         ) : active ? (
           <div aria-live="polite" className="flex min-w-0 flex-col gap-v-150 overflow-x-hidden">
             {active.id === 'story' && Boolean(canvas) && (
@@ -952,6 +975,94 @@ function LazyPanelFallback() {
       <Text typography="body4" foreground="hint-200">
         패널을 불러오는 중...
       </Text>
+    </div>
+  );
+}
+
+/**
+ * 디버그 탭 본문. agent client 의 raw 요청/응답을 그대로 노출해 사용자가
+ * DeepSeek 가 어떤 prompt 로 호출되고 어떤 SSE 본문이 돌아왔는지 직접
+ * 검토할 수 있게 한다. JSON 은 pretty-print, raw response 는 원본 그대로.
+ */
+function DebugTracePanel({ trace }: { trace: AgentDebugTrace }) {
+  const requestJson = (() => {
+    try {
+      return JSON.stringify(trace.request, null, 2);
+    } catch {
+      return '[request 직렬화 실패]';
+    }
+  })();
+  const handleCopy = (value: string) => {
+    void navigator.clipboard?.writeText(value);
+  };
+  return (
+    <div className="flex min-w-0 flex-col gap-v-300 overflow-x-hidden">
+      <div className="flex flex-wrap items-center gap-v-100 rounded-v-200 border border-v-normal bg-v-canvas-200 px-v-200 py-v-150">
+        <Badge
+          size="sm"
+          colorPalette={trace.status === 'done' ? 'success' : 'danger'}
+          data-testid="debug-trace-status"
+        >
+          {trace.status === 'done' ? '완료' : '오류'}
+        </Badge>
+        <Text typography="body4" foreground="hint-200">
+          endpoint: {trace.endpoint}
+        </Text>
+        <Text typography="body4" foreground="hint-200">
+          {trace.durationMs}ms
+        </Text>
+        {trace.errorMessage && (
+          <Text typography="body4" foreground="danger-200">
+            {trace.errorMessage}
+          </Text>
+        )}
+      </div>
+
+      <section className="flex min-w-0 flex-col gap-v-100">
+        <div className="flex flex-wrap items-center justify-between gap-v-100">
+          <Text typography="subtitle2">요청 payload</Text>
+          <Button
+            size="sm"
+            variant="ghost"
+            data-testid="debug-copy-request"
+            onClick={() => handleCopy(requestJson)}
+          >
+            요청 복사
+          </Button>
+        </div>
+        <pre
+          aria-label="DeepSeek 요청 payload"
+          data-testid="debug-request-body"
+          className="max-h-72 min-w-0 max-w-full overflow-auto rounded-v-200 border border-v-normal bg-v-canvas-100 p-v-150 font-mono text-xs"
+        >
+          <code>{requestJson}</code>
+        </pre>
+      </section>
+
+      <section className="flex min-w-0 flex-col gap-v-100">
+        <div className="flex flex-wrap items-center justify-between gap-v-100">
+          <Text typography="subtitle2">응답 본문 (raw)</Text>
+          <Button
+            size="sm"
+            variant="ghost"
+            data-testid="debug-copy-response"
+            onClick={() => handleCopy(trace.responseText)}
+          >
+            응답 복사
+          </Button>
+        </div>
+        <Text typography="body4" foreground="hint-200">
+          SSE 토큰을 순서대로 이어붙인 원본입니다. artifact 태그, code fence,
+          fallback prose 가 그대로 포함됩니다.
+        </Text>
+        <pre
+          aria-label="DeepSeek 응답 본문"
+          data-testid="debug-response-body"
+          className="max-h-96 min-w-0 max-w-full overflow-auto rounded-v-200 border border-v-normal bg-v-canvas-100 p-v-150 font-mono text-xs"
+        >
+          <code>{trace.responseText || '(empty)'}</code>
+        </pre>
+      </section>
     </div>
   );
 }
