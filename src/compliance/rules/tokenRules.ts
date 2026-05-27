@@ -1,5 +1,5 @@
 import type { Gate } from '../types.ts';
-import type { FileSource } from '../../../server/compliance/collectFileSignals.ts';
+import type { FileSource } from '../../../server/compliance/types.ts';
 
 export type TokenRulesInput = {
   /** Per-file sources for location-level evidence reporting */

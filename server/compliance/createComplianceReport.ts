@@ -8,7 +8,7 @@ import { checkAccessibility } from '../../src/compliance/rules/accessibilityRule
 import { checkResponsive } from '../../src/compliance/rules/responsiveRules.ts';
 import { checkDocumentation } from '../../src/compliance/rules/documentationRules.ts';
 import { checkCodeQuality } from '../../src/compliance/rules/codeQualityRules.ts';
-import type { FileSignals } from './collectFileSignals.ts';
+import type { FileSignals } from './types.ts';
 import type { BrowserSmokeResult } from './readBrowserResults.ts';
 
 export type ReportInputs = {

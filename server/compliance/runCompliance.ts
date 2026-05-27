@@ -1,5 +1,6 @@
 import { resolve } from 'node:path';
-import { collectFileSignals, GOVERNED_SCAN_PATHS, type ScanScope } from './collectFileSignals.ts';
+import { collectFileSignals, GOVERNED_SCAN_PATHS } from './collectFileSignals.ts';
+import type { ScanScope } from './types.ts';
 import { createComplianceReport } from './createComplianceReport.ts';
 import { runEslintJson } from './runEslint.ts';
 import { readBrowserSmokeResult } from './readBrowserResults.ts';
