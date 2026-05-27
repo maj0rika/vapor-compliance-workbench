@@ -37,9 +37,9 @@ export function ComplianceGateCard({ gate }: ComplianceGateCardProps) {
           <div className="flex flex-col gap-v-50">
             <Text typography="subtitle2">{gate.name}</Text>
             <Text typography="body4" foreground="hint-200">
-              {gate.issueCount > 0
-                ? `이슈 ${gate.issueCount}건 발견`
-                : '이슈 없음'}
+              {gate.status === 'PASS'
+                ? `검증 항목 ${gate.issueCount}건`
+                : `이슈 ${gate.issueCount}건 발견`}
             </Text>
           </div>
           <Badge
