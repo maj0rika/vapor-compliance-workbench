@@ -58,3 +58,4 @@ notes.local.md
 .serena/
 .env.local
 .env.*.local
+.vercel
