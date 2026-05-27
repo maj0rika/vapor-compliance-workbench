@@ -33,6 +33,10 @@ const GATE_META: Record<string, { name: string; docLink?: string }> = {
   },
 };
 
+/** Demo violation — raw hex color to trigger FAIL gate for portfolio presentation. */
+const _DEMO_RAW_COLOR = '#ff3366';
+void _DEMO_RAW_COLOR; // intentional demo violation, suppress unused warning
+
 function adaptGate(g: EngineGate): ComplianceGate {
   const meta = GATE_META[g.gateId];
   const evidence: Evidence[] = g.evidence.map((e) => ({

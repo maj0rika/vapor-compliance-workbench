@@ -20,14 +20,15 @@ export function checkOverflow(input: LayoutCheckInput = {}): Gate {
       status: 'WARN',
       evidence: [
         {
-          message: 'Layout overflow check skipped: no Playwright result provided.',
+          message:
+            '레이아웃 오버플로 검사는 로컬 개발 환경에서만 실행됩니다. `npm run verify:ci` 로 확인하세요.',
         },
       ],
       fixGuide: [
         {
-          title: 'Wire Playwright screenshot',
+          title: '로컬에서 전체 검증 실행',
           detail:
-            'Run Playwright layout spec and pass overflowDetected result to enable this gate.',
+            '`npm run verify:ci` 를 실행하면 Playwright smoke 테스트가 모든 뷰포트의 레이아웃을 검증합니다.',
         },
       ],
     };

@@ -23,14 +23,15 @@ export function checkResponsive(input: ResponsiveInput = {}): Gate {
       status: 'WARN',
       evidence: [
         {
-          message: 'Responsive design check skipped: no breakpoint test results provided.',
+          message:
+            '반응형 디자인 검사는 로컬 개발 환경에서만 실행됩니다. `npm run verify:ci` 로 확인하세요.',
         },
       ],
       fixGuide: [
         {
-          title: 'Wire responsive Playwright spec',
+          title: '로컬에서 전체 검증 실행',
           detail:
-            'Run Playwright tests at mobile/tablet/desktop breakpoints and pass testedBreakpoints to enable this gate.',
+            '`npm run verify:ci` 를 실행하면 390/768/1280/1440/1480 해상도 × light/dark 테마 smoke 테스트가 모든 뷰포트를 검증합니다.',
         },
       ],
     };

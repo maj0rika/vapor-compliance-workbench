@@ -59,10 +59,10 @@ export function ComplianceSummary({ report }: ComplianceSummaryProps) {
             className={[
               'h-full rounded-v-100 transition-all',
               score >= 80
-                ? 'bg-v-success'
+                ? 'bg-green-500'
                 : score >= 50
-                  ? 'bg-v-warning'
-                  : 'bg-v-danger',
+                  ? 'bg-yellow-500'
+                  : 'bg-red-500',
             ].join(' ')}
             style={{ width: `${score}%` }}
           />
@@ -90,17 +90,17 @@ function StatChip({
 }) {
   const textClass =
     palette === 'success'
-      ? 'text-v-success'
+      ? 'text-green-600'
       : palette === 'warning'
-        ? 'text-v-warning'
-        : 'text-v-danger';
+        ? 'text-yellow-600'
+        : 'text-red-600';
 
   const bgClass =
     palette === 'success'
-      ? 'bg-v-success-100'
+      ? 'bg-green-100'
       : palette === 'warning'
-        ? 'bg-v-warning-100'
-        : 'bg-v-danger-100';
+        ? 'bg-yellow-100'
+        : 'bg-red-100';
 
   return (
     <div
