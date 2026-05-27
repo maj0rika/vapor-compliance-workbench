@@ -7,6 +7,7 @@ interface EvidencePanelProps {
 
 /**
  * 증거 목록 패널: file:line + 코드 스니펫을 표시한다.
+ * location 정보가 없는 evidence는 깔끔한 텍스트로만 렌더링한다.
  */
 export function EvidencePanel({ evidence }: EvidencePanelProps) {
   if (evidence.length === 0) {
@@ -19,34 +20,49 @@ export function EvidencePanel({ evidence }: EvidencePanelProps) {
     );
   }
 
+  const hasAnyLocation = evidence.some((ev) => ev.file || ev.line > 0);
+
   return (
-    <ul className="flex flex-col gap-v-150" aria-label="이슈 증거 목록">
-      {evidence.map((ev, i) => (
-        <li
-          key={`${ev.file}:${ev.line}:${i}`}
-          className="flex flex-col gap-v-75 rounded-v-200 border border-v-normal bg-v-canvas-200 p-v-200"
-        >
-          <div className="flex items-center gap-v-100 overflow-x-auto">
-            {ev.file && (
-              <span
-                className="shrink-0 rounded-v-100 bg-v-canvas-300 px-v-100 py-v-50 font-mono text-xs text-v-hint"
-              >
-                {ev.file}
-              </span>
-            )}
-            {ev.line > 0 && (
-              <span
-                className="shrink-0 rounded-v-100 border border-v-normal px-v-100 py-v-50 font-mono text-xs text-v-hint"
-              >
-                L{ev.line}
-              </span>
-            )}
-          </div>
-          <pre className="overflow-x-auto rounded-v-100 bg-v-canvas-100 p-v-150 text-xs">
-            <code className="font-mono text-v-foreground-normal">{ev.snippet}</code>
-          </pre>
-        </li>
-      ))}
+    <ul className="flex flex-col gap-v-150" aria-label="증거 목록">
+      {evidence.map((ev, i) => {
+        const hasLocation = ev.file || ev.line > 0;
+
+        if (!hasLocation) {
+          // Informational evidence (e.g. "No violations found", "README contains ...")
+          return (
+            <li
+              key={`info-${i}`}
+              className="rounded-v-200 border border-v-normal bg-v-canvas-200 p-v-200"
+            >
+              <Text typography="body3">{ev.snippet}</Text>
+            </li>
+          );
+        }
+
+        // Code-level evidence with file:line location
+        return (
+          <li
+            key={`${ev.file}:${ev.line}:${i}`}
+            className="flex flex-col gap-v-75 rounded-v-200 border border-v-normal bg-v-canvas-200 p-v-200"
+          >
+            <div className="flex items-center gap-v-100 overflow-x-auto">
+              {ev.file && (
+                <span className="shrink-0 rounded-v-100 bg-v-canvas-300 px-v-100 py-v-50 font-mono text-xs text-v-hint">
+                  {ev.file}
+                </span>
+              )}
+              {ev.line > 0 && (
+                <span className="shrink-0 rounded-v-100 border border-v-normal px-v-100 py-v-50 font-mono text-xs text-v-hint">
+                  L{ev.line}
+                </span>
+              )}
+            </div>
+            <pre className="overflow-x-auto rounded-v-100 bg-v-canvas-100 p-v-150 text-xs">
+              <code className="font-mono text-v-foreground-normal">{ev.snippet}</code>
+            </pre>
+          </li>
+        );
+      })}
     </ul>
   );
 }

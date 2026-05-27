@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Text } from '@vapor-ui/core';
 import { ComplianceHeader } from '../components/compliance/ComplianceHeader';
 import { ComplianceChecklist } from '../components/compliance/ComplianceChecklist';
@@ -13,6 +13,7 @@ import type { ComplianceReport as EngineReport } from '../compliance/types';
  *
  * /api/compliance/report (Vite 미들웨어, server/compliance/complianceProxy) 에서
  * 실제 엔진 결과를 fetch 한다. 엔진은 deterministic 한 스캐너 집합.
+ * Vercel production 환경에서는 빌드 시 생성된 정적 JSON 이 반환된다.
  * 네트워크 실패·CSR-only 환경에서는 Engine Failure 에러를 표시한다.
  */
 export function CompliancePage() {
@@ -20,10 +21,14 @@ export function CompliancePage() {
   const [selectedGateId, setSelectedGateId] = useState<string>('');
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fetchIdRef = useRef(0);
 
+  // 최소 600ms 동안 로딩 상태를 유지해 사용자가 피드백을 인지할 수 있게 함
   const runScan = useCallback(async () => {
+    const fetchId = ++fetchIdRef.current;
     setIsRunning(true);
     setError(null);
+    const start = Date.now();
     try {
       const res = await fetch('/api/compliance/report', {
         cache: 'no-store',
@@ -31,14 +36,20 @@ export function CompliancePage() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const engineReport = (await res.json()) as EngineReport;
+      // 최소 로딩 시간 보장
+      const elapsed = Date.now() - start;
+      if (elapsed < 600) await new Promise((r) => setTimeout(r, 600 - elapsed));
+      // fetch 경합 방지: 최신 요청만 반영
+      if (fetchId !== fetchIdRef.current) return;
       const adapted = adaptEngineReport(engineReport);
       setReport(adapted);
       setSelectedGateId(adapted.gates[0]?.id ?? '');
     } catch (err) {
+      if (fetchId !== fetchIdRef.current) return;
       const msg = err instanceof Error ? err.message : String(err);
       setError(`Engine Failure: ${msg}`);
     } finally {
-      setIsRunning(false);
+      if (fetchId === fetchIdRef.current) setIsRunning(false);
     }
   }, []);
 
@@ -66,7 +77,7 @@ export function CompliancePage() {
       />
 
       {report && (
-        <div className="px-v-400 py-v-150">
+        <div className="flex items-center gap-v-100 px-v-400 py-v-150">
           <Text typography="body4" foreground="hint-200">
             마지막 검사:{' '}
             {new Date(report.timestamp).toLocaleString('ko-KR', {
@@ -78,6 +89,9 @@ export function CompliancePage() {
               second: '2-digit',
             })}
           </Text>
+          <span className="rounded-v-100 bg-v-canvas-300 px-v-100 py-v-25 text-xs text-v-hint">
+            빌드 시 생성
+          </span>
         </div>
       )}
 
@@ -89,6 +103,14 @@ export function CompliancePage() {
         >
           <Text typography="body4" foreground="warning-100">
             {error}
+          </Text>
+        </div>
+      )}
+
+      {isRunning && !report && !error && (
+        <div className="flex flex-1 items-center justify-center px-v-400 pb-v-400">
+          <Text typography="body3" foreground="hint-200">
+            컴플라이언스 검사 실행 중…
           </Text>
         </div>
       )}
@@ -116,13 +138,13 @@ export function CompliancePage() {
             )}
           </main>
         </div>
-      ) : (
+      ) : !isRunning ? (
         <div className="flex flex-1 items-center justify-center px-v-400 pb-v-400">
           <Text typography="body3" foreground="hint-200">
             검사를 실행하세요.
           </Text>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
