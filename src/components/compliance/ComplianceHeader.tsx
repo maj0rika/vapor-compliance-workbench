@@ -22,10 +22,10 @@ export function ComplianceHeader({ onRun, onReset, isRunning = false }: Complian
         </Text>
       </div>
       <div className="flex items-center gap-v-100">
-        <Button variant="fill" size="md" disabled={isRunning} onClick={onRun}>
+        <Button variant="fill" size="md" disabled={isRunning} onClick={onRun} data-testid="compliance-action-run">
           {isRunning ? '검사 중…' : '검사 실행'}
         </Button>
-        <Button variant="ghost" size="md" onClick={onReset}>
+        <Button variant="ghost" size="md" onClick={onReset} data-testid="compliance-action-reset">
           리포트 초기화
         </Button>
       </div>

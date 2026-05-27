@@ -42,7 +42,7 @@ export function ComplianceChecklist({
         {gates.map((gate) => {
           const isSelected = gate.id === selectedGateId;
           return (
-            <li key={gate.id} role="option" aria-selected={isSelected}>
+            <li key={gate.id} role="option" aria-selected={isSelected} data-testid={`compliance-gate-${gate.id}`}>
               <Button
                 variant={isSelected ? 'fill' : 'ghost'}
                 color="secondary"

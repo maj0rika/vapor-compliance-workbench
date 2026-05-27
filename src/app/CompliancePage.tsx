@@ -84,6 +84,7 @@ export function CompliancePage() {
       {error && (
         <div
           role="status"
+          data-testid="compliance-engine-error"
           className="mx-v-400 mb-v-200 rounded-v-200 border border-v-warning-200 bg-v-warning-100 px-v-300 py-v-200"
         >
           <Text typography="body4" foreground="warning-100">

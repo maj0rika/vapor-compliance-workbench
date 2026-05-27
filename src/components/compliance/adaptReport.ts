@@ -27,6 +27,10 @@ const GATE_META: Record<string, { name: string; docLink?: string }> = {
     docLink: 'https://vapor-ui.goorm.io/docs/getting-started/principles',
   },
   documentation: { name: '문서 준비도' },
+  'code-quality': {
+    name: '코드 품질',
+    docLink: 'https://vapor-ui.goorm.io/docs/getting-started/eslint',
+  },
 };
 
 function adaptGate(g: EngineGate): ComplianceGate {
