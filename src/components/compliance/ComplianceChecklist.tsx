@@ -58,7 +58,7 @@ export function ComplianceChecklist({
               className={[
                 'flex w-full cursor-pointer items-center justify-between rounded-v-200 px-v-200 py-v-100 transition-colors',
                 isSelected
-                  ? 'bg-v-primary-100 text-white'
+                  ? 'bg-v-primary-100 text-v-primary'
                   : 'bg-transparent hover:bg-v-canvas-200',
               ].join(' ')}
             >
@@ -66,7 +66,7 @@ export function ComplianceChecklist({
                 <Text
                   typography="body3"
                   foreground={isSelected ? undefined : 'normal-100'}
-                  className={isSelected ? '!text-white' : undefined}
+                  className={isSelected ? '!text-v-primary' : undefined}
                 >
                   {gate.name}
                 </Text>
@@ -74,7 +74,7 @@ export function ComplianceChecklist({
                   <Text
                     typography="body4"
                     foreground={isSelected ? undefined : 'hint-200'}
-                    className={isSelected ? '!text-white' : undefined}
+                    className={isSelected ? '!text-v-primary' : undefined}
                   >
                     {gate.status === 'PASS'
                       ? `검증 항목 ${gate.issueCount}건`

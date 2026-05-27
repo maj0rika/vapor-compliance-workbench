@@ -52,6 +52,7 @@ export function ComplianceGateCard({ gate }: ComplianceGateCardProps) {
             size="lg"
             aria-label={`게이트 상태: ${STATUS_LABEL[gate.status]}`}
             data-testid="gate-status-badge"
+            role="status"
           >
             {STATUS_LABEL[gate.status]}
           </Badge>

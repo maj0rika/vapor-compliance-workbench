@@ -36,6 +36,7 @@ export function ComplianceSummary({ report }: ComplianceSummaryProps) {
           shape="pill"
           size="md"
           aria-label={`종합 결과: ${STATUS_LABEL[overallStatus]}`}
+          role="status"
         >
           {STATUS_LABEL[overallStatus]}
         </Badge>
