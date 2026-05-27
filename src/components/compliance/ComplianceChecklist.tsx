@@ -64,7 +64,9 @@ export function ComplianceChecklist({
                       foreground={isSelected ? undefined : 'hint-200'}
                       className={isSelected ? '!text-white' : undefined}
                     >
-                      이슈 {gate.issueCount}건
+                      {gate.status === 'PASS'
+                        ? `검증 항목 ${gate.issueCount}건`
+                        : `이슈 ${gate.issueCount}건`}
                     </Text>
                   )}
                 </div>
